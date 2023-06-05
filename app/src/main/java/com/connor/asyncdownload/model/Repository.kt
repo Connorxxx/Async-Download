@@ -3,7 +3,6 @@ package com.connor.asyncdownload.model
 import android.content.Context
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
-import com.connor.asyncdownload.utils.logCat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -12,9 +11,7 @@ import io.ktor.client.statement.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,9 +35,19 @@ class Repository @Inject constructor(
         send(DownloadType.Finished(file))
     }.onStart {
         emit(DownloadType.Started)
+    }.onCompletion {
+        deleteDirectoryContents(ctx.cacheDir)
     }.catch { error ->
         error.printStackTrace()
         emit(DownloadType.Failed(error))
     }.flowOn(Dispatchers.IO)
 
+    private fun deleteDirectoryContents(directory: File) {
+        directory.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                deleteDirectoryContents(file)
+            }
+            if (file.length() > 10 * 1024 * 1024) file.delete()
+        }
+    }
 }

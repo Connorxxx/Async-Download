@@ -11,6 +11,7 @@ import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadAll
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.ui.adapter.DlAdapter
+import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.post
 import com.connor.asyncdownload.utils.showToast
 import com.connor.asyncdownload.utils.subscribe
@@ -40,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         dlAdapter.submitList(ArrayList(viewModel.linkList))
         dlAdapter.bindData(::handleAdapter)
         binding.fab.setOnClickListener {
-            post(DownloadAll)
+           post(DownloadAll)
         }
     }
 
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         with(itemBinding) {
             lifecycleScope.launch {
                 subscribe<DownloadAll> {
+                    data.name.logCat()
                     viewModel.download(data).collect {
                         downloadState(it)
                     }
