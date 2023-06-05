@@ -23,10 +23,10 @@ class DlAdapter @Inject constructor() : ListAdapter<Link, DlAdapter.ViewHolder>(
         }
     }
 
-    private var listener: ((ItemDownloadBinding, Link) -> Unit?)? = null
+    private var datas: ((ItemDownloadBinding, Link) -> Unit?)? = null
 
-    fun setClickListener(listener: (ItemDownloadBinding, Link) -> Unit) {
-        this.listener = listener
+    fun bindData(datas: (ItemDownloadBinding, Link) -> Unit) {
+        this.datas = datas
     }
 
     inner class ViewHolder(private val binding: ItemDownloadBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -34,7 +34,7 @@ class DlAdapter @Inject constructor() : ListAdapter<Link, DlAdapter.ViewHolder>(
         fun bind(data: Link) {
             binding.tvName.text = data.name
             binding.progressBar.progress = data.progress.toInt()
-            listener?.let { it(binding, data) }
+            datas?.let { it(binding, data) }
         }
     }
 

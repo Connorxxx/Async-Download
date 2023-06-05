@@ -3,13 +3,17 @@ package com.connor.asyncdownload
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.connor.asyncdownload.databinding.ActivityMainBinding
+import com.connor.asyncdownload.databinding.ItemDownloadBinding
+import com.connor.asyncdownload.model.data.Link
+import com.connor.asyncdownload.type.DownloadAll
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.ui.adapter.DlAdapter
+import com.connor.asyncdownload.utils.post
+import com.connor.asyncdownload.utils.showToast
+import com.connor.asyncdownload.utils.subscribe
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
@@ -22,7 +26,8 @@ class MainActivity : AppCompatActivity() {
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val viewModel by viewModels<MainViewModel>()
 
-    @Inject lateinit var dlAdapter: DlAdapter
+    @Inject
+    lateinit var dlAdapter: DlAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,33 +38,47 @@ class MainActivity : AppCompatActivity() {
         }
         viewModel.initLink()
         dlAdapter.submitList(ArrayList(viewModel.linkList))
-        dlAdapter.setClickListener { b, data ->
-            b.tvName.setOnClickListener {
+        dlAdapter.bindData(::handleAdapter)
+        binding.fab.setOnClickListener {
+            post(DownloadAll)
+        }
+    }
 
-            }
+    private fun handleAdapter(itemBinding: ItemDownloadBinding, data: Link) {
+        with(itemBinding) {
             lifecycleScope.launch {
-                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                subscribe<DownloadAll> {
                     viewModel.download(data).collect {
-                        when (it) {
-                            is DownloadType.Started -> { }
-                            is DownloadType.Progress -> {
-                                if (it.name == data.name) data.progress = it.value
-                                b.progressBar.progress = data.progress.toInt()
-                            }
-                            is DownloadType.Failed -> {
-
-                            }
-                            is DownloadType.Finished -> {
-
-                            }
-                            is DownloadType.AsyncDownload -> {
-                                it.body.await()
-                            }
-                        }
+                        downloadState(it)
                     }
                 }
             }
+            tvName.setOnClickListener {
+                lifecycleScope.launch {
+                    viewModel.download(data).collect {
+                        downloadState(it)
+                    }
+                }
+            }
+        }
+    }
 
+    private fun ItemDownloadBinding.downloadState(it: DownloadType) {
+        when (it) {
+            is DownloadType.Started -> {
+                tvName.isEnabled = false
+            }
+            is DownloadType.Progress -> {
+                tvName.text = it.value
+                progressBar.progress = it.value.toInt()
+            }
+            is DownloadType.Failed -> {
+
+            }
+            is DownloadType.Finished -> {
+                tvName.isEnabled = true
+                tvName.text = it.file.name
+            }
         }
     }
 }
