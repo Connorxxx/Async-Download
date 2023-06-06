@@ -8,10 +8,13 @@
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/tv_file"
         style="@style/TextAppearance.MaterialComponents.Headline6"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:singleLine="true"
+        app:layout_constraintEnd_toStartOf="@+id/tv_progress"
         app:layout_constraintStart_toStartOf="@+id/progress_bar"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="@string/app_name" />
@@ -44,7 +47,7 @@
         app:layout_constraintTop_toTopOf="@+id/img_dl" />
 
     <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/tv_progress"
+        android:id="@+id/tv_size"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -52,7 +55,7 @@
         android:textColor="@color/black"
         app:layout_constraintStart_toStartOf="@+id/progress_bar"
         app:layout_constraintTop_toBottomOf="@+id/progress_bar"
-        tools:text="60 / 100" />
+        tools:text="23.4MB / 22.5MB" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/tv_speed"
@@ -66,4 +69,14 @@
         app:layout_constraintEnd_toEndOf="@+id/progress_bar"
         app:layout_constraintTop_toBottomOf="@+id/progress_bar"
         tools:text="444Kb/s" />
+
+    <TextView
+        android:id="@+id/tv_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_file"
+        app:layout_constraintEnd_toEndOf="@+id/progress_bar"
+        tools:text="60 %" />
 </androidx.constraintlayout.widget.ConstraintLayout>

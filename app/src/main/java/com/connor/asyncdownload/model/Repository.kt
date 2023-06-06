@@ -1,21 +1,17 @@
 package com.connor.asyncdownload.model
 
 import android.content.Context
+import com.connor.asyncdownload.BuildConfig
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
-import com.connor.asyncdownload.utils.downloadedBytes
-import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.logCat
-import com.connor.asyncdownload.utils.onStreaming
+import com.connor.asyncdownload.utils.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import java.io.File
 import javax.inject.Inject
@@ -30,9 +26,17 @@ class Repository @Inject constructor(
 
     suspend fun downloadFile(link: Link) = channelFlow {
         val file = File(ctx.filesDir, link.url.getFileNameFromUrl() ?: "error")
+        if (file.exists()) {
+            if (!BuildConfig.DEBUG) {
+                send(DownloadType.FileExists(link))
+                return@channelFlow
+            } else file.delete()
+        }
+        send(DownloadType.Started(link))
         client.prepareGet(link.url) {
-            onDownload { _, contentLength ->
-                val progress = (downloadedBytes * 100f / contentLength).roundToInt().toString()
+            onDownload { _, length ->
+                val progress = (downBytes * 100f / length).roundToInt().toString()
+                send(DownloadType.Size(downBytes.formatSize(), length.formatSize(), link))
                 if (progress == "0") send(DownloadType.Waiting(link))
                 else send(DownloadType.Progress(progress, link))
             }
@@ -42,10 +46,7 @@ class Repository @Inject constructor(
             }
         }
         send(DownloadType.Finished(file, link))
-    }.onStart {
-        emit(DownloadType.Started(link))
-    }.onCompletion { emit(DownloadType.Canceled(link)) }
-        .catch { error ->
+    }.catch { error ->
         error.printStackTrace()
         emit(DownloadType.Failed(error, link))
     }.flowOn(Dispatchers.IO)

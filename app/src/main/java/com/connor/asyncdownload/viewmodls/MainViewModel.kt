@@ -1,14 +1,18 @@
 package com.connor.asyncdownload.viewmodls
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.utils.logCat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,6 +21,8 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     val linkList = ArrayList<Link>()
+    var job: Job? = null
+        private set
 
     private val domain = "http://192.168.3.193:8080/"
 
@@ -28,6 +34,11 @@ class MainViewModel @Inject constructor(
         linkList.add(Link(domain + "5.apk", "5.apk"))
     }
 
-    suspend fun download(link: Link) = repository.downloadFile(link)
+    fun download(link: Link, block: suspend (DownloadType<Link>) -> Unit) {
+        job = viewModelScope.launch {
+            link.url.logCat()
+            repository.downloadFile(link).collect { block(it) }
+        }
+    }
 
 }

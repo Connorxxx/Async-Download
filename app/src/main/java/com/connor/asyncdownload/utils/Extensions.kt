@@ -9,6 +9,12 @@ import com.connor.asyncdownload.BuildConfig
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import java.io.File
+import kotlin.math.log10
+import kotlin.math.pow
+
+var downBytes = 0L
+    private set
+
 
 inline fun <reified T : ViewBinding> Fragment.viewBinding() =
     ViewBindingDelegate(T::class.java, this)
@@ -28,19 +34,25 @@ fun String.getFileNameFromUrl(): String? {
     return matchResult?.groupValues?.get(1)
 }
 
-var downloadedBytes: Long = 0
-    private set
+fun Long.formatSize(): String {
+    if (this <= 0) return "0 B"
+
+    val units = arrayOf("B", "KB", "MB", "GB")
+    val digitGroups = (log10(this.toDouble()) / log10(1024.0)).toInt()
+    val size = this / 1024.0.pow(digitGroups.toDouble())
+
+    return String.format("%.2f %s", size, units[digitGroups])
+}
 
 suspend fun ByteReadChannel.onStreaming(
     file: File,
     length: Long?,
     speed: suspend (String) -> Unit
 ) {
-    var bytesDownloaded = 0L
     val startTime = System.currentTimeMillis()
 
     length?.let {
-        val skipBytes = downloadedBytes.coerceAtMost(it)
+        val skipBytes = downBytes.coerceAtMost(it)
         this.readRemaining(skipBytes)
     }
 
@@ -50,12 +62,10 @@ suspend fun ByteReadChannel.onStreaming(
         while (!buffer.isEmpty) {
             val bytes = buffer.readBytes()
             file.appendBytes(bytes)
-            bytesDownloaded += bytes.size
-            downloadedBytes += bytes.size
+            downBytes += bytes.size
 
-            val currentTime = System.currentTimeMillis()
-            val elapsedTime = currentTime - startTime
-            val downloadSpeed = bytesDownloaded.toDouble() / elapsedTime * 1000
+            val elapsedTime = System.currentTimeMillis() - startTime
+            val downloadSpeed = downBytes.toDouble() / elapsedTime * 1000
             speed(formatSpeed(downloadSpeed))
         }
     }

@@ -7,6 +7,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.connor.asyncdownload.databinding.ActivityMainBinding
 import com.connor.asyncdownload.model.data.Link
+import com.connor.asyncdownload.model.data.State
+import com.connor.asyncdownload.service.DownloadService
 import com.connor.asyncdownload.type.DownloadAll
 import com.connor.asyncdownload.ui.adapter.DlAdapter
 import com.connor.asyncdownload.utils.logCat
@@ -27,41 +29,33 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var dlAdapter: DlAdapter
 
-    private var job: Job? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         with(binding) {
             rvDl.layoutManager = LinearLayoutManager(this@MainActivity)
             rvDl.adapter = dlAdapter
+            fab.setOnClickListener {
+                viewModel.linkList.filterNot {
+                    it.state == State.Finished || it.state == State.Downloading
+                }.forEach { link ->
+                    viewModel.download(link) {
+                        dlAdapter.progressState.emit(it)
+                    }
+                }
+            }
         }
         viewModel.initLink()
         with(dlAdapter) {
             submitList(ArrayList(viewModel.linkList))
-            setNameClicked {
-                job = lifecycleScope.launch {
-                    viewModel.download(it).collect {
-                        progressState.emit(it)
-                    }
-                }
-            }
             setFileClicked {
-                job?.cancel()
-            }
-        }
-
-        binding.fab.setOnClickListener {
-            lifecycleScope.launch {
-                viewModel.linkList.forEach { link ->
-                    launch {
-                        viewModel.download(link).collect {
-                            dlAdapter.progressState.emit(it)
-                        }
+                it.isPause.logCat()
+                if (!it.isPause) {
+                    viewModel.download(it) { type ->
+                        progressState.emit(type)
                     }
-                }
+                } else viewModel.job?.cancel()
             }
-
         }
     }
 }

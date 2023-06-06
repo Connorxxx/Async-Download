@@ -10,8 +10,11 @@ import coil.load
 import com.connor.asyncdownload.R
 import com.connor.asyncdownload.databinding.ItemDownloadBinding
 import com.connor.asyncdownload.model.data.Link
+import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.type.DownloadType
+import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.logCat
+import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.CoroutineScope
@@ -38,12 +41,7 @@ class DlAdapter @Inject constructor(
 
     val progressState = MutableStateFlow<DownloadType<Link>>(DownloadType.Default)
 
-    private var l: ((Link) -> Unit)? = null
     private var fileListen: ((Link) -> Unit)? = null
-
-    fun setNameClicked(datas: (Link) -> Unit) {
-        this.l = datas
-    }
 
     fun setFileClicked(datas: (Link) -> Unit) {
         fileListen = datas
@@ -55,13 +53,12 @@ class DlAdapter @Inject constructor(
         private var currentLink: Link? = null
 
         init {
-            binding.tvFile.setOnClickListener {
-                currentLink?.let { data ->
-                    l?.let { it(data) }
-                }
-            }
             binding.imgDl.setOnClickListener {
                 currentLink?.let { data ->
+                    if (data.state == State.Finished) return@setOnClickListener
+                    data.isPause = !data.isPause
+                    if (data.isPause) binding.imgDl.load(R.drawable.circle_down)
+                    else binding.imgDl.load(R.drawable.pause_circle)
                     fileListen?.let { it(data) }
                 }
             }
@@ -71,7 +68,6 @@ class DlAdapter @Inject constructor(
             currentLink = data
             with(binding) {
                 tvFile.text = data.name
-                progressBar.progress = data.progress.toInt()
                 scope.launch {
                     progressState.collect {
                         when (it) {
@@ -83,41 +79,48 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.Started -> {
                                 if (it.m.uuid == data.uuid) {
-                                    it.m.url.logCat()
+                                    data.state = State.Downloading
                                     imgDl.load(R.drawable.pause_circle)
+                                }
+                            }
+                            is DownloadType.FileExists -> {
+                                if (it.m.uuid == data.uuid) {
+                                    "File exists".showToast()
+                                    imgDl.load(R.drawable.circle_down)
                                 }
                             }
                             is DownloadType.Progress -> {
                                 if (it.m.uuid == data.uuid) {
-                                    data.progress = it.value
-                                    tvProgress.text = context.getString(R.string.progress_value, data.progress)
-                                    progressBar.progress = data.progress.toInt()
+                                    tvProgress.text = context.getString(R.string.progress_value, it.value)
+                                    progressBar.progress = it.value.toInt()
+                                }
+                            }
+                            is DownloadType.Size -> {
+                                if (it.m.uuid == data.uuid) {
+                                    tvSize.text = context.getString(R.string.download_size, it.size, it.total)
                                 }
                             }
                             is DownloadType.Speed -> {
                                 if (it.m.uuid == data.uuid) {
-                                    data.speed = it.value
-                                    binding.tvSpeed.text = data.speed
+                                    binding.tvSpeed.text = it.value
                                 }
                             }
                             is DownloadType.Failed -> {
                                 if (it.m.uuid == data.uuid) {
-                                    data.name = "error"
-                                    it.throwable.localizedMessage?.logCat()
+                                    data.state = State.Failed
+                                    binding.imgDl.load(R.drawable.circle_down)
+                                    binding.tvProgress.text = context.getString(R.string.dl_failed)
+                                    it.throwable.localizedMessage?.showToast()
                                 }
-                            }
-                            is DownloadType.Canceled -> {
-                                if (it.m.uuid == data.uuid) {
-                                    imgDl.load(R.drawable.circle_down)
-                                }
-                                "CANCELED v".logCat()
                             }
                             is DownloadType.Finished -> {
                                 if (it.m.uuid == data.uuid) {
+                                    data.state = State.Finished
                                     data.name = it.file.name
                                     binding.tvSpeed.text = ""
                                     tvProgress.text = context.getString(R.string.done)
                                     imgDl.load(R.drawable.check_circle)
+                                    tvSize.text = it.file.length().formatSize()
                                 }
                             }
                         }
