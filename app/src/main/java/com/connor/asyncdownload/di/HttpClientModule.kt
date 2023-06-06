@@ -1,6 +1,7 @@
 package com.connor.asyncdownload.di
 
 import android.content.Context
+import com.connor.asyncdownload.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,13 +30,13 @@ object HttpClientModule {
 //            }
 //        }
         engine {
-            threadsCount = 16
+            threadsCount = 32
             clientCacheSize = 1024 * 1204 * 128
             config {
-                connectTimeout(30, TimeUnit.SECONDS)
-                readTimeout(30, TimeUnit.SECONDS)
-                writeTimeout(30, TimeUnit.SECONDS)
-                cache(Cache(ctx.cacheDir, 1024 * 1204 * 128))
+                connectTimeout(60, TimeUnit.SECONDS)
+                readTimeout(60, TimeUnit.SECONDS)
+                writeTimeout(60, TimeUnit.SECONDS)
+                if (!BuildConfig.DEBUG) cache(Cache(ctx.cacheDir, 1024 * 1204 * 128))
                 followRedirects(true)
             }
         }

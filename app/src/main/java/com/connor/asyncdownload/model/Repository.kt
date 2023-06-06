@@ -1,8 +1,10 @@
 package com.connor.asyncdownload.model
 
 import android.content.Context
+import com.connor.asyncdownload.BuildConfig
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
+import com.connor.asyncdownload.utils.getFileNameFromUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -27,19 +29,17 @@ class Repository @Inject constructor(
         val httpResponse = client.get(link.url) {
             onDownload { bytesSentTotal, contentLength ->
                 val progress = (bytesSentTotal * 100f / contentLength).roundToInt().toString()
-                send(DownloadType.Progress(progress,link.name))
+                send(DownloadType.Progress(progress, link))
             }
         }.bodyAsChannel()
-        val file = File(ctx.filesDir, link.name)
+        val file = File(ctx.filesDir, link.url.getFileNameFromUrl() ?: "error")
         httpResponse.copyAndClose(file.writeChannel())
-        send(DownloadType.Finished(file))
+        send(DownloadType.Finished(file, link))
     }.onStart {
-        emit(DownloadType.Started)
-    }.onCompletion {
-        deleteDirectoryContents(ctx.cacheDir)
+        emit(DownloadType.Started(link))
     }.catch { error ->
         error.printStackTrace()
-        emit(DownloadType.Failed(error))
+        emit(DownloadType.Failed(error, link))
     }.flowOn(Dispatchers.IO)
 
     private fun deleteDirectoryContents(directory: File) {

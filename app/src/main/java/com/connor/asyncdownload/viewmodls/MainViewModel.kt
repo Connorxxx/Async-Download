@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.Link
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.take
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,10 +18,10 @@ class MainViewModel @Inject constructor(
 
     fun initLink() {
         linkList.add(Link(domain + "1.apk", "1.apk"))
-        linkList.add(Link(domain + "1.apk", "2.apk"))
-        linkList.add(Link(domain + "1.apk", "3.apk"))
-        linkList.add(Link(domain + "1.apk", "4.apk"))
-        linkList.add(Link(domain + "1.apk", "5.apk"))
+        linkList.add(Link(domain + "2.apk", "2.apk"))
+        linkList.add(Link(domain + "3.apk", "3.apk"))
+        linkList.add(Link(domain + "4.apk", "4.apk"))
+        linkList.add(Link(domain + "5.apk", "5.apk"))
     }
 
     suspend fun download(link: Link) = repository.downloadFile(link)

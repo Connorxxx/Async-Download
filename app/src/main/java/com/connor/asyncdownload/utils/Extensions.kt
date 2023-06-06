@@ -18,3 +18,9 @@ fun Any.logCat(tab: String = "ASYNC_DOWNLOAD_LOG") {
     if (!BuildConfig.DEBUG) return
     if (this is String) Log.d(tab, this) else Log.d(tab, this.toString())
 }
+
+fun String.getFileNameFromUrl(): String? {
+    val regex = ".*/(.+)".toRegex()
+    val matchResult = regex.find(this)
+    return matchResult?.groupValues?.get(1)
+}
