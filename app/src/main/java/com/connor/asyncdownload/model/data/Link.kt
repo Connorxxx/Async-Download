@@ -13,3 +13,5 @@ data class Link(
 enum class State{
     Default, Finished, Failed, Downloading
 }
+
+

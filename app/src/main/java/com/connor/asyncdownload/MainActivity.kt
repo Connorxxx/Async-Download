@@ -10,6 +10,7 @@ import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.service.DownloadService
 import com.connor.asyncdownload.type.DownloadAll
+import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.ui.adapter.DlAdapter
 import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.post
@@ -17,6 +18,8 @@ import com.connor.asyncdownload.utils.subscribe
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
