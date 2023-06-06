@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Async Download</string>
+    <string name="wating">Waiting…</string>
+    <string name="progress_value">%1$s %%</string>
+    <string name="done">Done</string>
 </resources>

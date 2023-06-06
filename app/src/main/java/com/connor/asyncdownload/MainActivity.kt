@@ -14,6 +14,7 @@ import com.connor.asyncdownload.utils.post
 import com.connor.asyncdownload.utils.subscribe
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var dlAdapter: DlAdapter
 
+    private var job: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -34,14 +37,20 @@ class MainActivity : AppCompatActivity() {
             rvDl.adapter = dlAdapter
         }
         viewModel.initLink()
-        dlAdapter.submitList(ArrayList(viewModel.linkList))
-        dlAdapter.setNameClicked {
-            lifecycleScope.launch {
-                viewModel.download(it).collect {
-                    dlAdapter.progressState.emit(it)
+        with(dlAdapter) {
+            submitList(ArrayList(viewModel.linkList))
+            setNameClicked {
+                job = lifecycleScope.launch {
+                    viewModel.download(it).collect {
+                        progressState.emit(it)
+                    }
                 }
             }
+            setFileClicked {
+                job?.cancel()
+            }
         }
+
         binding.fab.setOnClickListener {
             lifecycleScope.launch {
                 viewModel.linkList.forEach { link ->
