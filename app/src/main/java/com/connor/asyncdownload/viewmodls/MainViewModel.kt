@@ -13,12 +13,14 @@ class MainViewModel @Inject constructor(
 
     val linkList = ArrayList<Link>()
 
+    private val domain = "http://192.168.1.105:8080/"
+
     fun initLink() {
-        linkList.add(Link("http://192.168.10.186:8080/Downloads/temp/1.flac", "1.flac"))
-        linkList.add(Link("http://192.168.10.186:8080/Downloads/temp/2.flac", "2.flac"))
-        linkList.add(Link("http://192.168.10.186:8080/Downloads/temp/3.flac", "3.flac"))
-        linkList.add(Link("http://192.168.10.186:8080/Downloads/temp/4.flac", "4.flac"))
-        linkList.add(Link("http://192.168.10.186:8080/Downloads/temp/5.flac", "5.flac"))
+        linkList.add(Link(domain + "1.apk", "1.apk"))
+        linkList.add(Link(domain + "1.apk", "2.apk"))
+        linkList.add(Link(domain + "1.apk", "3.apk"))
+        linkList.add(Link(domain + "1.apk", "4.apk"))
+        linkList.add(Link(domain + "1.apk", "5.apk"))
     }
 
     suspend fun download(link: Link) = repository.downloadFile(link)
