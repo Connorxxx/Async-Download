@@ -2,14 +2,14 @@ package com.connor.asyncdownload.ui.adapter
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
+import android.app.Notification.EXTRA_NOTIFICATION_ID
+import android.app.Notification.EXTRA_NOTIFICATION_TAG
 import android.app.PendingIntent
 import android.app.PendingIntent.*
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
-import android.widget.ProgressBar
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.recyclerview.widget.DiffUtil
@@ -23,7 +23,6 @@ import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.receiver.CancelReceiver
-import com.connor.asyncdownload.receiver.PauseReceiver
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.logCat
@@ -46,25 +45,10 @@ class DlAdapter @Inject constructor(
         override fun areItemsTheSame(oldItem: Link, newItem: Link): Boolean {
             return oldItem.ktorDownload.uuid == newItem.ktorDownload.uuid
         }
-
         override fun areContentsTheSame(oldItem: Link, newItem: Link): Boolean {
             return oldItem == newItem
         }
     }
-
-    private val pauseIntent = Intent(context, PauseReceiver::class.java)
-    private val pendingPauseIntent = getBroadcast(context, 0, pauseIntent, FLAG_IMMUTABLE)
-
-    private val cancelIntent = Intent(context, CancelReceiver::class.java)
-    private val pendingCancelIntent = getBroadcast(context, 0, cancelIntent, FLAG_IMMUTABLE)
-
-    val builder =  NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_download)
-        .setContentTitle("Downloading...")
-        .setProgress(100, 0, false)
-        .addAction(R.drawable.pause_circle, "暂停", pendingPauseIntent)
-        .addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
-        .setOngoing(true)
 
     val progressState = MutableStateFlow<DownloadType<KtorDownload>>(DownloadType.Default)
 
@@ -105,6 +89,12 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.Started -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
+                                    val cancelIntent = Intent(context, CancelReceiver::class.java).apply {
+                                        putExtra(EXTRA_NOTIFICATION_ID, data.id)
+                                    }
+                                    val pendingCancelIntent =
+                                        getBroadcast(context, 0, cancelIntent, FLAG_MUTABLE)
+                                    val builder = builder(data, pendingCancelIntent)
                                     with(NotificationManagerCompat.from(context)) {
                                         notify(data.id, builder.build())
                                     }
@@ -123,7 +113,7 @@ class DlAdapter @Inject constructor(
                                 if (it.m.uuid == data.ktorDownload.uuid) {
                                     tvProgress.text =
                                         context.getString(R.string.progress_value, it.value)
-                                    updateProgress(it.value.toInt(), data.id)
+                                    //updateProgress(it.value.toInt(), data.id)
                                     animator = progressBar.setAmin(it.value.toInt(), 450)
                                 }
                             }
@@ -141,6 +131,7 @@ class DlAdapter @Inject constructor(
                             is DownloadType.Failed -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
                                     data.state = State.Failed
+                                    data.isPause = false
                                     imgDl.load(R.drawable.circle_down)
                                     tvProgress.text = context.getString(R.string.dl_failed)
                                     it.throwable.localizedMessage?.showToast()
@@ -162,6 +153,7 @@ class DlAdapter @Inject constructor(
                                     tvSpeed.text = ""
                                     animator?.cancel()
                                     progressBar.progress = 100
+                                   // updateProgress(100, data.id)
                                 }
                             }
                         }
@@ -185,9 +177,18 @@ class DlAdapter @Inject constructor(
         holder.bind(repo)
     }
 
+    fun builder(link: Link, pendingCancelIntent: PendingIntent) = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_download)
+        .setContentTitle("Downloading...")
+        .setProgress(100, 0, false)
+        .addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
+        .setContentTitle(link.name)
+        //.setContentIntent(pendingIntent)
+        .setOngoing(true)
+
 
     @SuppressLint("MissingPermission")
-    fun updateProgress(progress: Int, id: Int) {
+    fun updateProgress(builder:  NotificationCompat.Builder, progress: Int, id: Int) {
         builder.setProgress(100, progress, false)
         with(NotificationManagerCompat.from(context)) {
             notify(id, builder.build())

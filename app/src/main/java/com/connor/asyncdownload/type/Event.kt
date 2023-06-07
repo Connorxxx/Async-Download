@@ -2,4 +2,5 @@ package com.connor.asyncdownload.type
 
 sealed interface Event
 
-object DownloadAll : Event
+data class Id(val id: Int) : Event
+

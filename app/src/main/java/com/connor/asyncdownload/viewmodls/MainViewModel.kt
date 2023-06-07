@@ -21,7 +21,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     val linkList = ArrayList<Link>()
-    private val domain = "http://192.168.3.193:8080/"
+    private val domain = "http://192.168.10.185:8080/Downloads/temp/"
 
     init {
         linkList.add(
@@ -38,9 +38,9 @@ class MainViewModel @Inject constructor(
                 "Clash.for.Windows.7z"
             )
         )
-        linkList.add(Link(KtorDownload(domain + "3.apk"), 2, "3.apk"))
-        linkList.add(Link(KtorDownload(domain + "4.apk"), 3, "4.apk"))
-        linkList.add(Link(KtorDownload(domain + "5.apk"), 4, "5.apk"))
+        linkList.add(Link(KtorDownload(domain + "3.flac"), 2, "3.apk"))
+        linkList.add(Link(KtorDownload(domain + "4.flac"), 3, "4.apk"))
+        linkList.add(Link(KtorDownload(domain + "5.flac"), 4, "5.apk"))
     }
 
     fun download(link: Link, block: suspend (DownloadType<KtorDownload>) -> Unit) {
