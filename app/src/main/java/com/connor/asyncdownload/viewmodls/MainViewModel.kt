@@ -27,18 +27,20 @@ class MainViewModel @Inject constructor(
         linkList.add(
             Link(
                 KtorDownload("https://github.com/MetaCubeX/Clash.Meta/releases/download/v1.14.5/clash.meta-linux-386-cgo-v1.14.5.gz"),
+                0,
                 "clash.apk"
             )
         )
         linkList.add(
             Link(
                 KtorDownload("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/0.20.24/Clash.for.Windows-0.20.24-win.7z"),
+                1,
                 "Clash.for.Windows.7z"
             )
         )
-        linkList.add(Link(KtorDownload(domain + "3.apk"), "3.apk"))
-        linkList.add(Link(KtorDownload(domain + "4.apk"), "4.apk"))
-        linkList.add(Link(KtorDownload(domain + "5.apk"), "5.apk"))
+        linkList.add(Link(KtorDownload(domain + "3.apk"), 2, "3.apk"))
+        linkList.add(Link(KtorDownload(domain + "4.apk"), 3, "4.apk"))
+        linkList.add(Link(KtorDownload(domain + "5.apk"), 4, "5.apk"))
     }
 
     fun download(link: Link, block: suspend (DownloadType<KtorDownload>) -> Unit) {

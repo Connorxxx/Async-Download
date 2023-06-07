@@ -1,5 +1,9 @@
 package com.connor.asyncdownload
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+
+        createNotificationChannel()
         with(binding) {
             rvDl.layoutManager = LinearLayoutManager(this@MainActivity)
             rvDl.adapter = dlAdapter
@@ -44,10 +50,7 @@ class MainActivity : AppCompatActivity() {
                         viewModel.download(link) {
                             dlAdapter.progressState.emit(it)
                         }
-                    } else link.ktorDownload.job?.let {
-                        sendCancel(it, link)
-                    }
-
+                    } else link.ktorDownload.job?.let { sendCancel(it, link) }
                 }
             }
         }
@@ -72,5 +75,22 @@ class MainActivity : AppCompatActivity() {
                 dlAdapter.progressState.emit(DownloadType.Canceled(link.ktorDownload))
             }.cancel()
         }
+    }
+
+    private fun createNotificationChannel() {
+
+        val name = getString(R.string.channel_name)
+        val descriptionText = getString(R.string.channel_description)
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
+        }
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    companion object {
+        const val CHANNEL_ID = "download"
     }
 }

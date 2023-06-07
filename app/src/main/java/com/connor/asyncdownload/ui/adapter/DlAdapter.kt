@@ -1,20 +1,29 @@
 package com.connor.asyncdownload.ui.adapter
 
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.app.PendingIntent.*
 import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.ProgressBar
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import com.connor.asyncdownload.MainActivity
 import com.connor.asyncdownload.R
 import com.connor.asyncdownload.databinding.ItemDownloadBinding
 import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.model.data.State
+import com.connor.asyncdownload.receiver.CancelReceiver
+import com.connor.asyncdownload.receiver.PauseReceiver
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.logCat
@@ -43,6 +52,20 @@ class DlAdapter @Inject constructor(
         }
     }
 
+    private val pauseIntent = Intent(context, PauseReceiver::class.java)
+    private val pendingPauseIntent = getBroadcast(context, 0, pauseIntent, FLAG_IMMUTABLE)
+
+    private val cancelIntent = Intent(context, CancelReceiver::class.java)
+    private val pendingCancelIntent = getBroadcast(context, 0, cancelIntent, FLAG_IMMUTABLE)
+
+    val builder =  NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_download)
+        .setContentTitle("Downloading...")
+        .setProgress(100, 0, false)
+        .addAction(R.drawable.pause_circle, "暂停", pendingPauseIntent)
+        .addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
+        .setOngoing(true)
+
     val progressState = MutableStateFlow<DownloadType<KtorDownload>>(DownloadType.Default)
 
     private var fileListen: ((Link) -> Unit)? = null
@@ -66,6 +89,7 @@ class DlAdapter @Inject constructor(
             }
         }
 
+        @SuppressLint("MissingPermission")
         fun bind(data: Link) {
             currentLink = data
             with(binding) {
@@ -81,6 +105,9 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.Started -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
+                                    with(NotificationManagerCompat.from(context)) {
+                                        notify(data.id, builder.build())
+                                    }
                                     data.state = State.Downloading
                                     data.isPause = true
                                     imgDl.load(R.drawable.pause_circle)
@@ -94,7 +121,9 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.Progress -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
-                                    tvProgress.text = context.getString(R.string.progress_value, it.value)
+                                    tvProgress.text =
+                                        context.getString(R.string.progress_value, it.value)
+                                    updateProgress(it.value.toInt(), data.id)
                                     animator = progressBar.setAmin(it.value.toInt(), 450)
                                 }
                             }
@@ -154,5 +183,14 @@ class DlAdapter @Inject constructor(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val repo = getItem(position)
         holder.bind(repo)
+    }
+
+
+    @SuppressLint("MissingPermission")
+    fun updateProgress(progress: Int, id: Int) {
+        builder.setProgress(100, progress, false)
+        with(NotificationManagerCompat.from(context)) {
+            notify(id, builder.build())
+        }
     }
 }
