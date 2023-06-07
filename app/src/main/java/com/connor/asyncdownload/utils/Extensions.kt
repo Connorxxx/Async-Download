@@ -1,20 +1,20 @@
 package com.connor.asyncdownload.utils
 
+import android.animation.ObjectAnimator
 import android.util.Log
+import android.view.animation.LinearInterpolator
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 import com.connor.asyncdownload.App
 import com.connor.asyncdownload.BuildConfig
+import com.connor.asyncdownload.model.data.KtorDownload
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import java.io.File
 import kotlin.math.log10
 import kotlin.math.pow
-
-var downBytes = 0L
-    private set
-
 
 inline fun <reified T : ViewBinding> Fragment.viewBinding() =
     ViewBindingDelegate(T::class.java, this)
@@ -46,30 +46,39 @@ fun Long.formatSize(): String {
 
 suspend fun ByteReadChannel.onStreaming(
     file: File,
-    length: Long?,
+    download: KtorDownload,
     speed: suspend (String) -> Unit
 ) {
-    val startTime = System.currentTimeMillis()
-
-    length?.let {
-        val skipBytes = downBytes.coerceAtMost(it)
-        this.readRemaining(skipBytes)
-    }
-
+    var lastUpdateTime = System.currentTimeMillis()
+    var lastDownloadedBytes = download.downBytes
 
     while (!this.isClosedForRead) {
         val buffer = this.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
         while (!buffer.isEmpty) {
             val bytes = buffer.readBytes()
             file.appendBytes(bytes)
-            downBytes += bytes.size
+            download.downBytes += bytes.size
 
-            val elapsedTime = System.currentTimeMillis() - startTime
-            val downloadSpeed = downBytes.toDouble() / elapsedTime * 1000
-            speed(formatSpeed(downloadSpeed))
+            val currentTime = System.currentTimeMillis()
+            val timeSinceLastUpdate = currentTime - lastUpdateTime
+
+            if (timeSinceLastUpdate >= 500) {
+                val downloadedBytesDelta = download.downBytes - lastDownloadedBytes
+                val downloadSpeed = downloadedBytesDelta.toDouble() / timeSinceLastUpdate * 1000
+                speed(formatSpeed(downloadSpeed))
+                lastUpdateTime = currentTime
+                lastDownloadedBytes = download.downBytes
+            }
         }
     }
 }
+
+fun ProgressBar.setAmin(value: Int, d: Long): ObjectAnimator =
+    ObjectAnimator.ofInt(this, "progress", this.progress, value).apply {
+        duration = d
+        interpolator = LinearInterpolator()
+        start()
+    }
 
 private fun formatSpeed(speed: Double): String {
     val kilobytes = speed / 1024

@@ -36,7 +36,7 @@ object HttpClientModule {
                 connectTimeout(60, TimeUnit.SECONDS)
                 readTimeout(60, TimeUnit.SECONDS)
                 writeTimeout(60, TimeUnit.SECONDS)
-                if (!BuildConfig.DEBUG) cache(Cache(ctx.cacheDir, 1024 * 1204 * 128))
+                cache(Cache(ctx.cacheDir, 1024 * 1204 * 128))
                 followRedirects(true)
             }
         }

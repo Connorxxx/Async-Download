@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.connor.asyncdownload.MainActivity
 import com.connor.asyncdownload.R
 import com.connor.asyncdownload.model.Repository
+import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.utils.logCat
@@ -46,10 +47,9 @@ class DownloadService @Inject constructor() : LifecycleService() {
         startForeground(1, notification)
     }
 
-    fun download(link: Link, block: suspend (DownloadType<Link>) -> Unit) {
+    fun download(link: Link, block: suspend (DownloadType<KtorDownload>) -> Unit) {
         job = lifecycleScope.launch {
-            link.url.logCat()
-            repository.downloadFile(link).collect { block(it) }
+            repository.downloadFile(link.ktorDownload).collect { block(it) }
         }
     }
 

@@ -1,13 +1,10 @@
 package com.connor.asyncdownload.model.data
 
-import java.util.*
-
 data class Link(
-    val url: String,
+    val ktorDownload: KtorDownload,
     var name: String,
-    var isPause: Boolean = true,
+    var isPause: Boolean = false,
     var state: State = State.Default,
-    val uuid: String = UUID.randomUUID().toString(),
 )
 
 enum class State{
