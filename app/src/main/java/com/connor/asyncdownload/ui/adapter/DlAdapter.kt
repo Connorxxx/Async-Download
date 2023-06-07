@@ -49,6 +49,15 @@ class DlAdapter @Inject constructor(
             return oldItem == newItem
         }
     }
+    private val intent = Intent(context, MainActivity::class.java)
+    private val pendingIntent = getActivity(context, 0, intent, FLAG_IMMUTABLE)
+
+    val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_download)
+        .setContentTitle("Downloading...")
+        .setProgress(100, 0, false)
+        .setContentIntent(pendingIntent)
+        .setOngoing(true)
 
     val progressState = MutableStateFlow<DownloadType<KtorDownload>>(DownloadType.Default)
 
@@ -93,8 +102,10 @@ class DlAdapter @Inject constructor(
                                         putExtra(EXTRA_NOTIFICATION_ID, data.id)
                                     }
                                     val pendingCancelIntent =
-                                        getBroadcast(context, 0, cancelIntent, FLAG_MUTABLE)
-                                    val builder = builder(data, pendingCancelIntent)
+                                        getBroadcast(context, data.id, cancelIntent, FLAG_MUTABLE)
+                                    builder.clearActions()
+                                    builder.addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
+                                    builder.setContentTitle(data.name)
                                     with(NotificationManagerCompat.from(context)) {
                                         notify(data.id, builder.build())
                                     }
@@ -113,7 +124,7 @@ class DlAdapter @Inject constructor(
                                 if (it.m.uuid == data.ktorDownload.uuid) {
                                     tvProgress.text =
                                         context.getString(R.string.progress_value, it.value)
-                                    //updateProgress(it.value.toInt(), data.id)
+                                    updateProgress(it.value.toInt(), data.id)
                                     animator = progressBar.setAmin(it.value.toInt(), 450)
                                 }
                             }
@@ -153,7 +164,7 @@ class DlAdapter @Inject constructor(
                                     tvSpeed.text = ""
                                     animator?.cancel()
                                     progressBar.progress = 100
-                                   // updateProgress(100, data.id)
+                                    updateProgress(100, data.id)
                                 }
                             }
                         }
@@ -177,18 +188,9 @@ class DlAdapter @Inject constructor(
         holder.bind(repo)
     }
 
-    fun builder(link: Link, pendingCancelIntent: PendingIntent) = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_download)
-        .setContentTitle("Downloading...")
-        .setProgress(100, 0, false)
-        .addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
-        .setContentTitle(link.name)
-        //.setContentIntent(pendingIntent)
-        .setOngoing(true)
-
 
     @SuppressLint("MissingPermission")
-    fun updateProgress(builder:  NotificationCompat.Builder, progress: Int, id: Int) {
+    fun updateProgress(progress: Int, id: Int) {
         builder.setProgress(100, progress, false)
         with(NotificationManagerCompat.from(context)) {
             notify(id, builder.build())

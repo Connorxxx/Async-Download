@@ -82,7 +82,6 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             subscribe<Id> { id ->
                 viewModel.linkList.find { it.id == id.id}?.let {
-                  //  it.name.showToast()
                     it.ktorDownload.job?.let { job -> sendCancel(job, it) }
                 }
                 with(NotificationManagerCompat.from(this@MainActivity)) {
