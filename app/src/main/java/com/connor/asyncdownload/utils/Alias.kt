@@ -2,8 +2,6 @@ package com.connor.asyncdownload.utils
 
 import android.Manifest
 import android.app.Activity
-import android.view.LayoutInflater
-import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 
 typealias PermissionChecker = (activity: Activity, permission: String) -> Boolean

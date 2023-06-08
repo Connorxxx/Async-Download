@@ -1,7 +1,6 @@
 package com.connor.asyncdownload.di
 
 import android.content.Context
-import com.connor.asyncdownload.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

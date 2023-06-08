@@ -6,12 +6,8 @@ import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.type.DownloadType
-import com.connor.asyncdownload.ui.adapter.DlAdapter
 import com.connor.asyncdownload.utils.logCat
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,9 +17,10 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
 
     val linkList = ArrayList<Link>()
-    private val domain = "http://192.168.10.185:8080/Downloads/temp/"
+    private val domain = "http://192.168.3.193:8080/"
 
     init {
+        "init".logCat()
         linkList.add(
             Link(
                 KtorDownload("https://github.com/MetaCubeX/Clash.Meta/releases/download/v1.14.5/clash.meta-linux-386-cgo-v1.14.5.gz"),
@@ -38,14 +35,19 @@ class MainViewModel @Inject constructor(
                 "Clash.for.Windows.7z"
             )
         )
-        linkList.add(Link(KtorDownload(domain + "3.flac"), 2, "3.apk"))
-        linkList.add(Link(KtorDownload(domain + "4.flac"), 3, "4.apk"))
-        linkList.add(Link(KtorDownload(domain + "5.flac"), 4, "5.apk"))
+        linkList.add(Link(KtorDownload(domain + "3.apk"), 2, "3.apk"))
+        linkList.add(Link(KtorDownload(domain + "4.apk"), 3, "4.apk"))
+        linkList.add(Link(KtorDownload(domain + "5.apk"), 4, "5.apk"))
     }
 
     fun download(link: Link, block: suspend (DownloadType<KtorDownload>) -> Unit) {
         link.ktorDownload.job = viewModelScope.launch {
             repository.downloadFile(link.ktorDownload).collect { block(it) }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        "onCleared".logCat()
     }
 }

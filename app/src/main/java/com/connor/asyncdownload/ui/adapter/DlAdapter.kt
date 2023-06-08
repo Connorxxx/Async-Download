@@ -3,8 +3,6 @@ package com.connor.asyncdownload.ui.adapter
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.app.Notification.EXTRA_NOTIFICATION_ID
-import android.app.Notification.EXTRA_NOTIFICATION_TAG
-import android.app.PendingIntent
 import android.app.PendingIntent.*
 import android.content.Context
 import android.content.Intent
@@ -24,10 +22,7 @@ import com.connor.asyncdownload.model.data.Link
 import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.receiver.CancelReceiver
 import com.connor.asyncdownload.type.DownloadType
-import com.connor.asyncdownload.utils.formatSize
-import com.connor.asyncdownload.utils.logCat
-import com.connor.asyncdownload.utils.setAmin
-import com.connor.asyncdownload.utils.showToast
+import com.connor.asyncdownload.utils.*
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.CoroutineScope
@@ -54,9 +49,8 @@ class DlAdapter @Inject constructor(
 
     val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_download)
-        .setContentTitle("Downloading...")
-        .setProgress(100, 0, false)
         .setContentIntent(pendingIntent)
+        .setOnlyAlertOnce(true)
         .setOngoing(true)
 
     val progressState = MutableStateFlow<DownloadType<KtorDownload>>(DownloadType.Default)
@@ -98,17 +92,6 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.Started -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
-                                    val cancelIntent = Intent(context, CancelReceiver::class.java).apply {
-                                        putExtra(EXTRA_NOTIFICATION_ID, data.id)
-                                    }
-                                    val pendingCancelIntent =
-                                        getBroadcast(context, data.id, cancelIntent, FLAG_MUTABLE)
-                                    builder.clearActions()
-                                    builder.addAction(R.drawable.ic_cancel, "取消", pendingCancelIntent)
-                                    builder.setContentTitle(data.name)
-                                    with(NotificationManagerCompat.from(context)) {
-                                        notify(data.id, builder.build())
-                                    }
                                     data.state = State.Downloading
                                     data.isPause = true
                                     imgDl.load(R.drawable.pause_circle)
@@ -116,7 +99,6 @@ class DlAdapter @Inject constructor(
                             }
                             is DownloadType.FileExists -> {
                                 if (it.m.uuid == data.ktorDownload.uuid) {
-                                    "File exists".showToast()
                                     imgDl.load(R.drawable.circle_down)
                                 }
                             }
@@ -124,7 +106,8 @@ class DlAdapter @Inject constructor(
                                 if (it.m.uuid == data.ktorDownload.uuid) {
                                     tvProgress.text =
                                         context.getString(R.string.progress_value, it.value)
-                                    updateProgress(it.value.toInt(), data.id)
+                                   // updateProgress(it.value.toInt(), data.id)
+                                    sendNotify(data, it.value.toInt())
                                     animator = progressBar.setAmin(it.value.toInt(), 450)
                                 }
                             }
@@ -164,7 +147,7 @@ class DlAdapter @Inject constructor(
                                     tvSpeed.text = ""
                                     animator?.cancel()
                                     progressBar.progress = 100
-                                    updateProgress(100, data.id)
+                                    finishedNotify(data, 100, data.id)
                                 }
                             }
                         }
@@ -188,10 +171,32 @@ class DlAdapter @Inject constructor(
         holder.bind(repo)
     }
 
+    @SuppressLint("NewApi", "MissingPermission")
+    private fun sendNotify(data: Link, progress: Int) {
+        val cancelIntent = Intent(context, CancelReceiver::class.java).apply {
+            putExtra(EXTRA_NOTIFICATION_ID, data.id)
+        }
+        val flag = if (TargetApi.S) FLAG_MUTABLE else 0
+        val cancel = getBroadcast(context, data.id, cancelIntent, flag)
+        builder.clearActions()
+        builder.setProgress(100, progress, false)
+        builder.addAction(R.drawable.ic_cancel, "取消", cancel)
+        builder.setContentTitle(data.name)
+        with(NotificationManagerCompat.from(context)) {
+            notify(data.id, builder.build())
+        }
+    }
+
 
     @SuppressLint("MissingPermission")
-    fun updateProgress(progress: Int, id: Int) {
-        builder.setProgress(100, progress, false)
+    fun finishedNotify(data: Link, progress: Int, id: Int) {
+        builder.apply {
+            clearActions()
+            setProgress(100, progress, false)
+            setContentTitle("Downloaded: ${data.name}")
+            setOngoing(false)
+        }
+
         with(NotificationManagerCompat.from(context)) {
             notify(id, builder.build())
         }

@@ -8,5 +8,7 @@ object TargetApi {
     val O = target(Build.VERSION_CODES.O)
     val P = target(Build.VERSION_CODES.P)
     val Q = target(Build.VERSION_CODES.Q)
+    val R = target(Build.VERSION_CODES.R)
+    val S = target(Build.VERSION_CODES.S)
     val T = target(Build.VERSION_CODES.TIRAMISU)
 }

@@ -5,7 +5,6 @@ import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.onStreaming
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 @ViewModelScoped
@@ -61,7 +59,6 @@ class Repository @Inject constructor(
                 }
             }
         }.execute {
-            it.status.logCat()
             if (it.status != HttpStatusCode.PartialContent) {
                 file.delete()
                 download.downBytes = 0

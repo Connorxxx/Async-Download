@@ -8,10 +8,10 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        app = this
+       // app = this
     }
 
-    companion object {
-        lateinit var app: App private set
-    }
+//    companion object {
+//        lateinit var app: App private set
+//    }
 }
