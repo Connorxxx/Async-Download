@@ -29,11 +29,15 @@ class MainViewModel @Inject constructor(
         emptyList()
     )
 
-    init {
-        (1..5).forEach {
-            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
-        }
+    //    init {
+//        (1..5).forEach {
+//            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
+//        }
+//    }
+    fun addData() {
+        insertDown(DownloadData(KtorDownload("$domain${(0..100).random()}.apk")))
     }
+
     fun insertDown(data: DownloadData) {
         viewModelScope.launch {
             repository.insertDown(data)

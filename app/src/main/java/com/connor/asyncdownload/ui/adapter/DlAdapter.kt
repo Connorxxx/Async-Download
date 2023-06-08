@@ -40,20 +40,21 @@ class DlAdapter @Inject constructor(
     private val repository: Repository
 ) : ListAdapter<DownloadData, DlAdapter.ViewHolder>(DlDiffCallback) {
 
+    private val jobs = ArrayList<Job>()
+
     object DlDiffCallback : DiffUtil.ItemCallback<DownloadData>() {
         override fun areItemsTheSame(oldItem: DownloadData, newItem: DownloadData): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(oldItem: DownloadData, newItem: DownloadData): Boolean {
-            return oldItem == newItem
+            return true//oldItem == newItem
         }
     }
 
-    private val job = Job()
+    private var job: Job? = null
 
-    val scope = CoroutineScope(Dispatchers.Main + job)
-
+    val scope = CoroutineScope(Dispatchers.Main)
 
     private val intent = Intent(ctx, MainActivity::class.java)
     private val pendingIntent = getActivity(ctx, 0, intent, FLAG_IMMUTABLE)
@@ -79,13 +80,14 @@ class DlAdapter @Inject constructor(
         private var animator: ObjectAnimator? = null
 
         init {
+            "init".logCat()
             binding.imgDl.setOnClickListener {
                 currentLink?.let { data ->
                     fileListen?.let { it(data) }
                 }
             }
             with(binding) {
-                scope.launch {
+                job = scope.launch {
                     progressState.collect {
                         currentLink?.let { data ->
                             when (it) {
@@ -112,8 +114,8 @@ class DlAdapter @Inject constructor(
                                             p = it.value.p
                                             size = it.value.size + " / "
                                             total = it.value.total
-                                            tvProgress.text =
-                                                ctx.getString(R.string.progress_value, p)
+//                                            tvProgress.text =
+//                                                ctx.getString(R.string.progress_value, p)
                                             tvSize.text =
                                                 ctx.getString(
                                                     R.string.download_size,
@@ -145,6 +147,7 @@ class DlAdapter @Inject constructor(
                                         data.state.name.logCat()
                                         // imgDl.load(R.drawable.circle_down)
                                         repository.updateDowns(data)
+                                        updateUI(data)
                                     }
                                 }
                                 is DownloadType.Canceled -> {
@@ -158,6 +161,7 @@ class DlAdapter @Inject constructor(
                                             total = ""
                                         }
                                         repository.updateDowns(data)
+                                        updateUI(data)
                                         tvSpeed.text = ""
 //                                    tvSize.text = ""
 //                                    tvProgress.text = ""
@@ -177,6 +181,7 @@ class DlAdapter @Inject constructor(
                                         //animator?.cancel()
                                         repository.updateDowns(data)
                                         //progressBar.progress = 100
+                                        updateUI(data)
                                         finishedNotify(data, 100, data.id)
                                     }
                                 }
@@ -191,27 +196,29 @@ class DlAdapter @Inject constructor(
         fun bind(data: DownloadData) {
             currentLink = data
             with(binding) {
-                imgDl.load(
-                    when (data.state) {
-                        State.Finished -> R.drawable.check_circle
-                        State.Downloading -> R.drawable.pause_circle
-                        else -> R.drawable.circle_down
-                    }
-                )
-                tvFile.text = data.ktorDownload.url.getFileNameFromUrl()
-                data.uiState.apply {
-                    progressBar.progress = p.toInt()
-                    tvProgress.text =
-                        if (p != "0" && p != "100") ctx.getString(R.string.progress_value, p)
-                        else if (p == "100") ctx.getString(R.string.done) else ""
-                    tvSize.text = if (total.isNotEmpty()) ctx.getString(
-                        R.string.download_size,
-                        size,
-                        total
-                    ) else ""
+                updateUI(data)
+            }
+        }
+
+        private fun ItemDownloadBinding.updateUI(data: DownloadData) {
+            imgDl.load(
+                when (data.state) {
+                    State.Finished -> R.drawable.check_circle
+                    State.Downloading -> R.drawable.pause_circle
+                    else -> R.drawable.circle_down
                 }
-
-
+            )
+            tvFile.text = data.ktorDownload.url.getFileNameFromUrl()
+            data.uiState.apply {
+                progressBar.progress = p.toInt()
+                tvProgress.text =
+                    if (p != "0" && p != "100") ctx.getString(R.string.progress_value, p)
+                    else if (p == "100") ctx.getString(R.string.done) else ""
+                tvSize.text = if (total.isNotEmpty()) ctx.getString(
+                    R.string.download_size,
+                    size,
+                    total
+                ) else ""
             }
         }
     }

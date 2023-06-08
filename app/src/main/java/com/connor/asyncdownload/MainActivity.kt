@@ -44,6 +44,10 @@ class MainActivity : AppCompatActivity() {
         with(binding) {
             rvDl.layoutManager = LinearLayoutManager(this@MainActivity)
             rvDl.adapter = dlAdapter
+            fab.setOnLongClickListener {
+                viewModel.addData()
+                true
+            }
             fab.setOnClickListener {
                 dlAdapter.currentList.filterNot { it.state == State.Finished }.forEach { link ->
                     if (!viewModel.fabState) {
