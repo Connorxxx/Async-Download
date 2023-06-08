@@ -54,6 +54,7 @@ class DlAdapter @Inject constructor(
 
     val scope = CoroutineScope(Dispatchers.Main + job)
 
+
     private val intent = Intent(ctx, MainActivity::class.java)
     private val pendingIntent = getActivity(ctx, 0, intent, FLAG_IMMUTABLE)
 
@@ -83,6 +84,107 @@ class DlAdapter @Inject constructor(
                     fileListen?.let { it(data) }
                 }
             }
+            with(binding) {
+                scope.launch {
+                    progressState.collect {
+                        currentLink?.let { data ->
+                            when (it) {
+                                is DownloadType.Waiting -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        tvProgress.text = ctx.getString(R.string.wating)
+                                    }
+                                }
+                                is DownloadType.Started -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        //"Started: ${data.id}".logCat()
+                                        data.state = State.Downloading
+                                        imgDl.load(R.drawable.pause_circle)
+                                    }
+                                }
+                                is DownloadType.FileExists -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        imgDl.load(R.drawable.circle_down)
+                                    }
+                                }
+                                is DownloadType.Progress -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        data.uiState.apply {
+                                            p = it.value.p
+                                            size = it.value.size + " / "
+                                            total = it.value.total
+                                            tvProgress.text =
+                                                ctx.getString(R.string.progress_value, p)
+                                            tvSize.text =
+                                                ctx.getString(
+                                                    R.string.download_size,
+                                                    size,
+                                                    total
+                                                )
+                                            sendNotify(data, p.toInt())
+                                            animator = progressBar.setAmin(p.toInt(), 450)
+                                        }
+                                    }
+                                }
+                                is DownloadType.Speed -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        binding.tvSpeed.text = it.value
+                                    }
+                                }
+                                is DownloadType.Failed -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        data.state = State.Failed
+                                        // data.isPause = false
+                                        imgDl.load(R.drawable.circle_down)
+                                        tvProgress.text = ctx.getString(R.string.dl_failed)
+                                        it.throwable.localizedMessage?.showToast()
+                                    }
+                                }
+                                is DownloadType.Pause -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        data.state = State.Pause
+                                        data.state.name.logCat()
+                                        // imgDl.load(R.drawable.circle_down)
+                                        repository.updateDowns(data)
+                                    }
+                                }
+                                is DownloadType.Canceled -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        data.state = State.Canceled
+                                        //  imgDl.load(R.drawable.circle_down)
+                                        data.ktorDownload.downBytes = 0
+                                        data.uiState.apply {
+                                            p = "0"
+                                            size = ""
+                                            total = ""
+                                        }
+                                        repository.updateDowns(data)
+                                        tvSpeed.text = ""
+//                                    tvSize.text = ""
+//                                    tvProgress.text = ""
+//                                    animator?.cancel()
+//                                    progressBar.progress = 0
+                                    }
+                                }
+                                is DownloadType.Finished -> {
+                                    if (it.m.url == data.ktorDownload.url) {
+                                        data.state = State.Finished
+                                        //  imgDl.load(R.drawable.check_circle)
+                                        data.uiState.apply {
+                                            p = "100"
+                                            size = ""
+                                            total = it.file.length().formatSize()
+                                        }
+                                        //animator?.cancel()
+                                        repository.updateDowns(data)
+                                        //progressBar.progress = 100
+                                        finishedNotify(data, 100, data.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         @SuppressLint("MissingPermission")
@@ -90,7 +192,7 @@ class DlAdapter @Inject constructor(
             currentLink = data
             with(binding) {
                 imgDl.load(
-                    when(data.state) {
+                    when (data.state) {
                         State.Finished -> R.drawable.check_circle
                         State.Downloading -> R.drawable.pause_circle
                         else -> R.drawable.circle_down
@@ -99,102 +201,17 @@ class DlAdapter @Inject constructor(
                 tvFile.text = data.ktorDownload.url.getFileNameFromUrl()
                 data.uiState.apply {
                     progressBar.progress = p.toInt()
-                    tvProgress.text = if (p != "0" && p != "100") ctx.getString(R.string.progress_value, p)
+                    tvProgress.text =
+                        if (p != "0" && p != "100") ctx.getString(R.string.progress_value, p)
                         else if (p == "100") ctx.getString(R.string.done) else ""
-                    tvSize.text = if (total.isNotEmpty()) ctx.getString(R.string.download_size, size, total) else ""
+                    tvSize.text = if (total.isNotEmpty()) ctx.getString(
+                        R.string.download_size,
+                        size,
+                        total
+                    ) else ""
                 }
-                scope.launch {
-                    progressState.collect {
-                        when (it) {
-                            is DownloadType.Waiting -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    tvProgress.text = ctx.getString(R.string.wating)
-                                }
-                            }
-                            is DownloadType.Started -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    //"Started: ${data.id}".logCat()
-                                    data.state = State.Downloading
-                                    imgDl.load(R.drawable.pause_circle)
-                                }
-                            }
-                            is DownloadType.FileExists -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    imgDl.load(R.drawable.circle_down)
-                                }
-                            }
-                            is DownloadType.Progress -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    data.uiState.apply {
-                                        p = it.value.p
-                                        size = it.value.size + " / "
-                                        total = it.value.total
-                                        tvProgress.text =
-                                            ctx.getString(R.string.progress_value, p)
-                                        tvSize.text =
-                                            ctx.getString(R.string.download_size, size, total)
-                                        sendNotify(data, p.toInt())
-                                        animator = progressBar.setAmin(p.toInt(), 450)
-                                    }
-                                }
-                            }
-                            is DownloadType.Speed -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    binding.tvSpeed.text = it.value
-                                }
-                            }
-                            is DownloadType.Failed -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    data.state = State.Failed
-                                    // data.isPause = false
-                                    imgDl.load(R.drawable.circle_down)
-                                    tvProgress.text = ctx.getString(R.string.dl_failed)
-                                    it.throwable.localizedMessage?.showToast()
-                                }
-                            }
-                            is DownloadType.Pause -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    data.state = State.Pause
-                                   // imgDl.load(R.drawable.circle_down)
-                                    repository.updateDowns(data)
-                                }
-                            }
-                            is DownloadType.Canceled -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    data.state = State.Canceled
-                                  //  imgDl.load(R.drawable.circle_down)
-                                    data.ktorDownload.downBytes = 0
-                                    data.uiState.apply {
-                                        p = "0"
-                                        size = ""
-                                        total = ""
-                                    }
-                                    repository.updateDowns(data)
-//                                    tvSpeed.text = ""
-//                                    tvSize.text = ""
-//                                    tvProgress.text = ""
-//                                    animator?.cancel()
-//                                    progressBar.progress = 0
-                                }
-                            }
-                            is DownloadType.Finished -> {
-                                if (it.m.url == data.ktorDownload.url) {
-                                    data.state = State.Finished
-                                  //  imgDl.load(R.drawable.check_circle)
-                                    data.uiState.apply {
-                                        p = "100"
-                                        size = ""
-                                        total = it.file.length().formatSize()
-                                    }
-                                    //animator?.cancel()
-                                    repository.updateDowns(data)
-                                    //progressBar.progress = 100
-                                    finishedNotify(data, 100, data.id)
-                                }
-                            }
-                        }
-                    }
-                }
+
+
             }
         }
     }

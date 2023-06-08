@@ -19,10 +19,7 @@ import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.Id
 import com.connor.asyncdownload.ui.adapter.DlAdapter
-import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.logCat
-import com.connor.asyncdownload.utils.showToast
-import com.connor.asyncdownload.utils.subscribe
+import com.connor.asyncdownload.utils.*
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job

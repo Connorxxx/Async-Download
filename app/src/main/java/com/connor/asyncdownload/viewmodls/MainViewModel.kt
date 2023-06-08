@@ -19,7 +19,7 @@ class MainViewModel @Inject constructor(
     private val repository: Repository
 ) : ViewModel() {
 
-    private val domain = "http://192.168.3.193:8080/"
+    private val domain = "http://192.168.98.15:8080/Downloads/temp/"
 
     var fabState = false
 
@@ -29,14 +29,20 @@ class MainViewModel @Inject constructor(
         emptyList()
     )
 
-//    init {
-//        (1..5).forEach {
-//            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
-//        }
-//    }
+    init {
+        (1..5).forEach {
+            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
+        }
+    }
     fun insertDown(data: DownloadData) {
         viewModelScope.launch {
             repository.insertDown(data)
+        }
+    }
+
+    fun updateDowns(data: DownloadData) {
+        viewModelScope.launch {
+            repository.updateDowns(data)
         }
     }
 
