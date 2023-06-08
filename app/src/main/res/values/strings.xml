@@ -2,7 +2,7 @@
     <string name="app_name">Async Download</string>
     <string name="wating">Waiting…</string>
     <string name="progress_value">%1$s %%</string>
-    <string name="download_size">%1$s / %2$s</string>
+    <string name="download_size">%1$s%2$s</string>
     <string name="done">Done</string>
     <string name="dl_failed">Download failed</string>
     <string name="channel_name">Download</string>

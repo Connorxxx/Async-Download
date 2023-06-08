@@ -8,22 +8,26 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestPermissi
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import com.connor.asyncdownload.databinding.ActivityMainBinding
-import com.connor.asyncdownload.model.data.Link
+import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.Id
 import com.connor.asyncdownload.ui.adapter.DlAdapter
+import com.connor.asyncdownload.utils.getFileNameFromUrl
 import com.connor.asyncdownload.utils.logCat
+import com.connor.asyncdownload.utils.showToast
 import com.connor.asyncdownload.utils.subscribe
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,67 +44,59 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         createNotificationChannel()
-
         with(binding) {
             rvDl.layoutManager = LinearLayoutManager(this@MainActivity)
             rvDl.adapter = dlAdapter
             fab.setOnClickListener {
-                viewModel.linkList.filterNot {
-                    it.state == State.Finished
-                }.forEach { link ->
-                    if (link.isPause) fab.load(R.drawable.circle_down)
-                    else fab.load(R.drawable.pause_circle)
-                    if (!link.isPause) {
-                        viewModel.download(link) {
-                            dlAdapter.progressState.emit(it)
-                        }
-                    } else link.ktorDownload.job?.let { sendCancel(it, link) }
+                dlAdapter.currentList.filterNot { it.state == State.Finished }.forEach { link ->
+                    if (!viewModel.fabState) {
+                        if (link.state != State.Downloading)
+                            viewModel.download(link) { type -> dlAdapter.progressState.emit(type) }
+                    } else {
+                        if (link.state == State.Downloading)
+                            link.ktorDownload.job?.let { job -> sendPause(job, link) }
+                    }
                 }
+                viewModel.fabState = !viewModel.fabState
+                if (!viewModel.fabState) fab.load(R.drawable.circle_down)
+                else fab.load(R.drawable.pause_circle)
             }
         }
         with(dlAdapter) {
-            submitList(viewModel.linkList)
             setFileClicked { link ->
-                if (!link.isPause) {
-                    viewModel.download(link) { type -> progressState.emit(type) }
-                } else link.ktorDownload.job?.let { job -> sendCancel(job, link) }
+                when (link.state) {
+                    State.Pause, State.Default, State.Canceled, State.Failed -> {
+                        viewModel.download(link) { type -> progressState.emit(type) }
+                    }
+                    State.Finished -> "finished".showToast()
+                    State.Downloading -> link.ktorDownload.job?.let { job -> sendPause(job, link) }
+                }
             }
         }
         lifecycleScope.launch {
-            subscribe<Id> { id ->
-                viewModel.linkList.find { it.id == id.id}?.let {
-                    it.ktorDownload.job?.let { job -> sendCancel(job, it) }
-                }
-                with(NotificationManagerCompat.from(this@MainActivity)) {
-                    cancel(id.id)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.loadDownData.collect {
+                        dlAdapter.submitList(it.sortedBy { d -> d.ktorDownload.url.getFileNameFromUrl() })
+                    }
                 }
             }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        "onDestroy".logCat()
-    }
-
     //requestNotify.launch(postNotify)
-    private val requestNotify = registerForActivityResult(RequestPermission()
+    private val requestNotify = registerForActivityResult(
+        RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
             "todo".logCat()
         }
     }
 
-    private fun sendCancel(
-        job: Job,
-        link: Link
-    ): DisposableHandle {
+    private fun sendPause(job: Job, link: DownloadData) {
         job.cancel()
-        return job.invokeOnCompletion {
-            lifecycleScope.launch {
-                dlAdapter.progressState.emit(DownloadType.Canceled(link.ktorDownload))
-                cancel()
-            }
+        lifecycleScope.launch {
+            dlAdapter.progressState.emit(DownloadType.Pause(link.ktorDownload))
         }
     }
 

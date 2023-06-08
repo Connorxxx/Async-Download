@@ -4,21 +4,25 @@ import android.app.Notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.connor.asyncdownload.type.Id
-import com.connor.asyncdownload.utils.logCat
-import com.connor.asyncdownload.utils.post
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import androidx.core.app.NotificationManagerCompat
+import com.connor.asyncdownload.ui.adapter.DlAdapter
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class CancelReceiver : BroadcastReceiver() {
+
+    @Inject lateinit var dlAdapter: DlAdapter
     override fun onReceive(coBroadcastReceiverntext: Context, intent: Intent) {
         val i = intent.getIntExtra(Notification.EXTRA_NOTIFICATION_ID, -1)
-        i.logCat()
-        CoroutineScope(Dispatchers.Main.immediate).launch {
-            post(Id(i))
-            cancel()
+        dlAdapter.apply {
+            scope.launch {
+                currentList.find { it.id == i }?.let {
+                    it.ktorDownload.job?.let { job -> sendCancel(job, it) }
+                }
+            }
         }
+        NotificationManagerCompat.from(coBroadcastReceiverntext).cancel(i)
     }
 }

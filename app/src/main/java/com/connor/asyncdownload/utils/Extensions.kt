@@ -20,7 +20,7 @@ inline fun <reified T : ViewBinding> Fragment.viewBinding() =
     ViewBindingDelegate(T::class.java, this)
 
 fun String.showToast() {
-    //Toast.makeText(App.app, this, Toast.LENGTH_SHORT).show()
+    Toast.makeText(App.app, this, Toast.LENGTH_SHORT).show()
 }
 
 fun Any.logCat(tab: String = "ASYNC_DOWNLOAD_LOG") {

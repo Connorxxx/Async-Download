@@ -1,8 +1,11 @@
 package com.connor.asyncdownload.model
 
 import android.content.Context
+import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.KtorDownload
+import com.connor.asyncdownload.model.room.DownDao
 import com.connor.asyncdownload.type.DownloadType
+import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.getFileNameFromUrl
 import com.connor.asyncdownload.utils.onStreaming
@@ -17,15 +20,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.roundToInt
 
-@ViewModelScoped
+@Singleton
 class Repository @Inject constructor(
     @ApplicationContext private val ctx: Context,
-    private val client: HttpClient
+    private val client: HttpClient,
+    private val downDao: DownDao
 ) {
+    val loadDownData = downDao.loadDown().flowOn(Dispatchers.IO)
+    suspend fun insertDown(data: DownloadData) = withContext(Dispatchers.IO) {
+        downDao.insertDown(data)
+    }
+
+    suspend fun updateDowns(data: DownloadData) = withContext(Dispatchers.IO) {
+        downDao.updateDowns(data)
+    }
 
     suspend fun downloadFile(download: KtorDownload) = channelFlow {
         val file = File(ctx.filesDir, download.url.getFileNameFromUrl() ?: "error")
@@ -44,17 +58,10 @@ class Repository @Inject constructor(
                 val progress = (download.downBytes * 100f / totalLength).roundToInt().toString()
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastUpdate = currentTime - lastUpdateTime
-
                 if (timeSinceLastUpdate >= 500) {
-                    send(
-                        DownloadType.Size(
-                            download.downBytes.formatSize(),
-                            totalLength.formatSize(),
-                            download
-                        )
-                    )
+                    val p = P(progress, download.downBytes.formatSize(), totalLength.formatSize())
                     if (download.downBytes == 0L) send(DownloadType.Waiting(download))
-                    else send(DownloadType.Progress(progress, download))
+                    else send(DownloadType.Progress(p, download))
                     lastUpdateTime = currentTime
                 }
             }
@@ -73,4 +80,5 @@ class Repository @Inject constructor(
         error.printStackTrace()
         emit(DownloadType.Failed(error, download))
     }.flowOn(Dispatchers.IO)
+
 }
