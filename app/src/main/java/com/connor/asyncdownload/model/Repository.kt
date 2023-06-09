@@ -8,14 +8,17 @@ import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.getFileNameFromUrl
+import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.onStreaming
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
@@ -42,7 +45,7 @@ class Repository @Inject constructor(
     }
 
     suspend fun downloadFile(download: KtorDownload) = channelFlow {
-        val file = File(ctx.filesDir, download.url.getFileNameFromUrl() ?: "error")
+        val file = File(ctx.cacheDir, download.url.getFileNameFromUrl() ?: "error")
         var exitsBytes = download.downBytes
         val rangeHeader = "bytes=${download.downBytes}-"
         var lastUpdateTime = System.currentTimeMillis()

@@ -11,6 +11,7 @@ data class DownloadData(
     @Embedded val ktorDownload: KtorDownload,
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     var state: State = State.Default,
+    var uriString: String = "",
     @Embedded val uiState: UiState = UiState()
 )
 

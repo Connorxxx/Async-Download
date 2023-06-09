@@ -5,7 +5,6 @@ import java.io.File
 sealed interface DownloadType<out T> {
     data class Waiting<out T>(val m: T) : DownloadType<T>
     data class Started<out T>(val m: T) : DownloadType<T>
-    data class FileExists<out T>(val m: T) : DownloadType<T>
     data class Progress<out T>(val value: P, val m: T) : DownloadType<T>
     data class Speed<out T>(val value: String, val m: T) : DownloadType<T>
     data class Finished<out T>(val file: File, val m: T) : DownloadType<T>

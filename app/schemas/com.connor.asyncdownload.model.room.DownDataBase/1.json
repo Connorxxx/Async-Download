@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "0b6e0ba19e953098c83573153cf0fbf9",
+    "identityHash": "99c5c611a580808596fe57270933afd6",
     "entities": [
       {
         "tableName": "down_data",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `state` TEXT NOT NULL, `url` TEXT NOT NULL, `downBytes` INTEGER NOT NULL, `p` TEXT NOT NULL, `size` TEXT NOT NULL, `total` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `state` TEXT NOT NULL, `uriString` TEXT NOT NULL, `url` TEXT NOT NULL, `downBytes` INTEGER NOT NULL, `p` TEXT NOT NULL, `size` TEXT NOT NULL, `total` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -17,6 +17,12 @@
           {
             "fieldPath": "state",
             "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uriString",
+            "columnName": "uriString",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -64,7 +70,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0b6e0ba19e953098c83573153cf0fbf9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '99c5c611a580808596fe57270933afd6')"
     ]
   }
 }

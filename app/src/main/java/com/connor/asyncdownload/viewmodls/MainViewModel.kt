@@ -6,10 +6,13 @@ import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.type.DownloadType
+import com.connor.asyncdownload.type.UiState
 import com.connor.asyncdownload.utils.logCat
+import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,9 +22,10 @@ class MainViewModel @Inject constructor(
     private val repository: Repository
 ) : ViewModel() {
 
-    private val domain = "http://192.168.98.15:8080/Downloads/temp/"
+    private val _uiState = MutableStateFlow<UiState>(UiState.FabClick(false))
+    val uiState = _uiState.asStateFlow()
 
-    var fabState = false
+    var fabClick = false
 
     val loadDownData = repository.loadDownData.stateIn(
         viewModelScope,
@@ -29,13 +33,25 @@ class MainViewModel @Inject constructor(
         emptyList()
     )
 
+    private val domain = "http://192.168.3.193:8080/"
+    private var i = 1
+
     //    init {
 //        (1..5).forEach {
 //            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
 //        }
 //    }
-    fun addData() {
-        insertDown(DownloadData(KtorDownload("$domain${(0..100).random()}.apk")))
+
+    fun setUi(uiState: UiState) {
+        viewModelScope.launch {
+            _uiState.emit(uiState)
+        }
+    }
+    fun addData(list: List<DownloadData>) {
+        val url = "$domain$i.apk"
+        if (!list.none { it.ktorDownload.url == url }) "Task already exists".showToast()
+        else insertDown(DownloadData(KtorDownload(url)))
+        i++
     }
 
     fun insertDown(data: DownloadData) {

@@ -18,9 +18,7 @@ class CancelReceiver : BroadcastReceiver() {
         val i = intent.getIntExtra(Notification.EXTRA_NOTIFICATION_ID, -1)
         dlAdapter.apply {
             scope.launch {
-                currentList.find { it.id == i }?.let {
-                    it.ktorDownload.job?.let { job -> sendCancel(job, it) }
-                }
+                sendCancel(i)
             }
         }
         NotificationManagerCompat.from(coBroadcastReceiverntext).cancel(i)
