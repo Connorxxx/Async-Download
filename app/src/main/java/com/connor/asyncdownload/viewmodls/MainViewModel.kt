@@ -10,10 +10,7 @@ import com.connor.asyncdownload.type.UiState
 import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,20 +24,10 @@ class MainViewModel @Inject constructor(
 
     var fabClick = false
 
-    val loadDownData = repository.loadDownData.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        emptyList()
-    )
+    val loadDownData = repository.loadDownData
 
-    private val domain = "http://192.168.3.193:8080/"
+    private val domain = "http://192.168.10.185:8080/Downloads/temp/"
     private var i = 1
-
-    //    init {
-//        (1..5).forEach {
-//            insertDown(DownloadData(KtorDownload("$domain$it.apk")))
-//        }
-//    }
 
     fun setUi(uiState: UiState) {
         viewModelScope.launch {

@@ -25,6 +25,7 @@ import com.connor.asyncdownload.utils.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,18 +37,15 @@ class DlAdapter @Inject constructor(
 ) : ListAdapter<DownloadData, DlAdapter.ViewHolder>(DlDiffCallback) {
 
     object DlDiffCallback : DiffUtil.ItemCallback<DownloadData>() {
-        override fun areItemsTheSame(oldItem: DownloadData, newItem: DownloadData): Boolean {
-            return oldItem.id == newItem.id
-        }
+        override fun areItemsTheSame(oldItem: DownloadData, newItem: DownloadData) =
+            oldItem.id == newItem.id
 
-        override fun areContentsTheSame(oldItem: DownloadData, newItem: DownloadData): Boolean {
-            "${oldItem.state.name}  ${newItem.state.name}".logCat()
-            return true//oldItem.state == newItem.state
-        }
+        override fun areContentsTheSame(oldItem: DownloadData, newItem: DownloadData) =
+            true//oldItem == newItem
     }
 
-    private val job = Job()
-    val scope = CoroutineScope(Dispatchers.Main + job)
+    //private val job = Job()
+    val scope = CoroutineScope(Dispatchers.Main)
     val progressState = MutableSharedFlow<DownloadType<KtorDownload>>()
 
     private val intent = Intent(ctx, MainActivity::class.java)
@@ -72,12 +70,13 @@ class DlAdapter @Inject constructor(
 
     inner class ViewHolder(private val binding: ItemDownloadBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        private var currentLink: DownloadData? = null
+
+        var currentLink: DownloadData? = null
         private var animator: ObjectAnimator? = null
 
         init {
             with(binding) {
-                imgDl.setOnClickListener{
+                imgDl.setOnClickListener {
                     currentLink?.let { data ->
                         fileListen?.let { it(data) }
                     }
@@ -93,7 +92,7 @@ class DlAdapter @Inject constructor(
                                 is DownloadType.Started -> {
                                     if (!isSame(it.m, data)) return@collect
                                     data.state = State.Downloading
-                                  //  data.ktorDownload.job = it.m.job
+                                    data.fileName = it.name
                                     imgDl.load(R.drawable.pause_circle)
                                 }
                                 is DownloadType.Progress -> {
@@ -123,8 +122,10 @@ class DlAdapter @Inject constructor(
                                 }
                                 is DownloadType.Pause -> {
                                     if (!isSame(it.m, data)) return@collect
+                                    currentList.find { it.id == data.id }.also {
+                                        currentList.indexOf(it).logCat()
+                                    }
                                     data.state = State.Pause
-                                    data.state.name.logCat()
                                     data.ktorDownload.job?.cancel()
                                     data.ktorDownload.downBytes = it.m.downBytes
                                     repository.updateDowns(data)
@@ -159,7 +160,7 @@ class DlAdapter @Inject constructor(
                                     updateUI(data)
                                     finishedNotify(data, 100, data.id)
                                     delay(200)
-                                    currentList.none { it.state != State.Finished }.also {b ->
+                                    currentList.none { it.state != State.Finished }.also { b ->
                                         finishedListen?.let { it(!b) }
                                     }
                                 }
@@ -169,6 +170,8 @@ class DlAdapter @Inject constructor(
                 }
             }
         }
+
+        val getBinding get() = binding
 
         private fun isSame(
             sendData: KtorDownload,

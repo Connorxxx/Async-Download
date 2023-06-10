@@ -1,6 +1,8 @@
 package com.connor.asyncdownload.model.data
 
-data class SizeBuffer(
-    val uuid: String,
-    val value: String
+import kotlinx.coroutines.Job
+
+data class Jobs(
+    val job: Job,
+    val uuid: String
 )

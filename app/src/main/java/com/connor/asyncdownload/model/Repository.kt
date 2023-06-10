@@ -45,7 +45,8 @@ class Repository @Inject constructor(
     }
 
     suspend fun downloadFile(download: KtorDownload) = channelFlow {
-        val file = File(ctx.cacheDir, download.url.getFileNameFromUrl() ?: "error")
+        val name = download.url.getFileNameFromUrl() ?: "error"
+        val file = File(ctx.cacheDir, name)
         var exitsBytes = download.downBytes
         val rangeHeader = "bytes=${download.downBytes}-"
         var lastUpdateTime = System.currentTimeMillis()
@@ -53,7 +54,7 @@ class Repository @Inject constructor(
 //            send(DownloadType.FileExists(download))
 //            return@channelFlow
 //        }
-        send(DownloadType.Started(download))
+        send(DownloadType.Started(name,download))
         client.prepareGet(download.url) {
             header(HttpHeaders.Range, rangeHeader)
             onDownload { _, length ->

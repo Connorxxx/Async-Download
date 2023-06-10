@@ -43,6 +43,8 @@ class MainActivity : AppCompatActivity() {
         with(binding) {
             rvDl.layoutManager = LinearLayoutManager(this@MainActivity)
             rvDl.adapter = dlAdapter
+            val hh = rvDl.findViewHolderForAdapterPosition(0) as? DlAdapter.ViewHolder
+
             fab.setOnLongClickListener {
                 viewModel.addData(dlAdapter.currentList)
                 true
@@ -50,7 +52,7 @@ class MainActivity : AppCompatActivity() {
             fab.setOnClickListener {
                // if (dlAdapter.currentList.none { it.state != State.Finished }) return@setOnClickListener
                 dlAdapter.currentList.filterNot { it.state == State.Finished }.forEach { link ->
-                    link.state.logCat()
+                    dlAdapter.currentList.indexOf(link).takeIf { it >= 0 }?.logCat()
 //                    if (!viewModel.fabClick) {
 //                        if (link.state != State.Downloading)
 //                            viewModel.download(link) { type -> dlAdapter.progressState.emit(type) }
@@ -84,7 +86,7 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.loadDownData.collect {
-                        dlAdapter.submitList(it.sortedBy { d -> d.id })
+                        dlAdapter.submitList(it)
                     }
                 }
                 launch {
