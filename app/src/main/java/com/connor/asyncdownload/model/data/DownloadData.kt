@@ -2,9 +2,7 @@ package com.connor.asyncdownload.model.data
 
 import androidx.room.Embedded
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import kotlinx.coroutines.Job
 
 @Entity(tableName = "down_data")
 data class DownloadData(
@@ -18,11 +16,8 @@ data class DownloadData(
 
 data class KtorDownload(
     val url: String,
-    var downBytes: Long = 0L,
-    @Ignore var job: Job? = null,
-) {
-    constructor(url: String, downBytes: Long) : this(url, downBytes, null)
-}
+    var downBytes: Long = 0L
+)
 
 data class UiState(
     var p: String = "0",

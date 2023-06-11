@@ -1,5 +1,6 @@
 package com.connor.asyncdownload.utils
 
+import com.connor.asyncdownload.model.data.ID
 import com.connor.asyncdownload.model.data.KtorDownload
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
@@ -49,6 +50,14 @@ suspend fun ByteReadChannel.onStreaming(
             }
         }
     }
+}
+
+fun <T: ID> ArrayList<T>.addID(id: Int, obj: T): ArrayList<T> {
+    find { it.id == id }?.let {
+        val index = indexOf(it)
+        this[index] = obj
+    } ?: add(obj)
+    return this
 }
 
 private fun formatSpeed(speed: Double): String {

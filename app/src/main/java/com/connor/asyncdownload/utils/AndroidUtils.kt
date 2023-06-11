@@ -1,9 +1,10 @@
 package com.connor.asyncdownload.utils
 
 import android.animation.ObjectAnimator
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
-import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -14,10 +15,14 @@ import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.connor.asyncdownload.App
 import com.connor.asyncdownload.BuildConfig
+import com.connor.asyncdownload.R
+import com.connor.asyncdownload.ui.adapter.DlAdapter
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -31,6 +36,20 @@ fun Any.logCat(tab: String = "ASYNC_DOWNLOAD_LOG") {
 
 fun String.showToast() {
     Toast.makeText(App.app, this, Toast.LENGTH_SHORT).show()
+}
+
+fun AppCompatActivity.createNotificationChannel(channelID: String) {
+    val name = getString(R.string.channel_name)
+    val descriptionText = getString(R.string.channel_description)
+    val importance = NotificationManager.IMPORTANCE_DEFAULT
+    val channel = NotificationChannel(channelID, name, importance).apply {
+        setSound(null, null)
+        enableVibration(false)
+        description = descriptionText
+    }
+    val notificationManager: NotificationManager =
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.createNotificationChannel(channel)
 }
 
 fun ProgressBar.setAmin(value: Int, d: Long): ObjectAnimator =
@@ -51,6 +70,9 @@ fun View.debounceClick(time: Long = 500L, listen: (View) -> Unit) {
         }
     }
 }
+
+fun RecyclerView.getHolderFromPosition(position: Int) =
+    findViewHolderForAdapterPosition(position) as? DlAdapter.ViewHolder
 
 
 @RequiresApi(Build.VERSION_CODES.Q)

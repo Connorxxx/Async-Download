@@ -10,7 +10,7 @@ sealed interface DownloadType<out T> {
     data class Finished<out T>(val file: File, val m: T) : DownloadType<T>
     data class Failed<out T>(val throwable: Throwable, val m: T) : DownloadType<T>
     data class Pause<out T>(val m: T) : DownloadType<T>
-    data class Canceled<out T>(val m: T): DownloadType<T>
+    object Canceled: DownloadType<Nothing>
 }
 data class P(
     val p: String,
