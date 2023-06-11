@@ -33,13 +33,8 @@ class DlAdapter @Inject constructor(
     }
 
     private var fileListen: ((DownloadData) -> Unit)? = null
-    private var finishedListen: ((Boolean) -> Unit)? = null
     fun setFileClicked(datas: (DownloadData) -> Unit) {
         fileListen = datas
-    }
-
-    fun finished(block: (Boolean) -> Unit) {
-        finishedListen = block
     }
 
     inner class ViewHolder(private val binding: ItemDownloadBinding) :

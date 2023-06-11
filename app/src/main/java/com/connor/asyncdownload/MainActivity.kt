@@ -104,9 +104,7 @@ class MainActivity : AppCompatActivity() {
             viewModel.loadDownData {
                 dlAdapter.submitList(it)
             }
-            finished {
-                viewModel.setUi(UiState.FabClick(it))
-            }
+
             setFileClicked { link ->
                 when (link.state) {
                     State.Pause, State.Default, State.Canceled, State.Failed -> {
@@ -120,7 +118,10 @@ class MainActivity : AppCompatActivity() {
                             startActivity(this)
                         }
                     }
-                    State.Downloading -> sendPause(link)
+                    State.Downloading -> {
+                        sendPause(link)
+                        setFabState(link)
+                    }
                 }
             }
         }
@@ -136,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                     viewModel.uiState.collect {
                         when (it) {
                             is UiState.FabClick -> {
+                                it.logCat()
                                 viewModel.fabClick = it.boolean
                                 if (!it.boolean) binding.fab.load(R.drawable.circle_down)
                                 else binding.fab.load(R.drawable.pause_circle)
@@ -217,7 +219,6 @@ class MainActivity : AppCompatActivity() {
                         ktorDownload.downBytes = it.m.ktorDownload.downBytes
                         updateDowns()
                     }
-                    setFabState(data)
                 }
                 is DownloadType.Canceled -> {
                     setFabState(data)
@@ -276,7 +277,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendPause(link: DownloadData) {
-        "sendPause ${link.id}".logCat()
         viewModel.setUi(UiState.Download(link, DownloadType.Pause(link)))
     }
 
