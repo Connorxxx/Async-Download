@@ -1,10 +1,12 @@
 package com.connor.asyncdownload.utils
 
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -25,6 +27,7 @@ import com.connor.asyncdownload.R
 import com.connor.asyncdownload.ui.adapter.DlAdapter
 import kotlinx.coroutines.*
 import java.io.File
+import java.io.InputStream
 
 inline fun <reified T : ViewBinding> Fragment.viewBinding() =
     ViewBindingDelegate(T::class.java, this)
@@ -74,9 +77,15 @@ fun View.debounceClick(time: Long = 500L, listen: (View) -> Unit) {
 fun RecyclerView.getHolderFromPosition(position: Int) =
     findViewHolderForAdapterPosition(position) as? DlAdapter.ViewHolder
 
+@SuppressLint("NewApi")
+fun File.copyToDownload(ctx: Context): String {
+    return if (TargetApi.Q) androidQOrHigherCopyToDownload(ctx)
+    else androidQOrLowerCopyToDownload()
+
+}
 
 @RequiresApi(Build.VERSION_CODES.Q)
-fun File.copyToDownload(ctx: Context): String {
+private fun File.androidQOrHigherCopyToDownload(ctx: Context): String {
     var uriString = ""
     val v = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, name)
@@ -92,6 +101,20 @@ fun File.copyToDownload(ctx: Context): String {
         }
     }
     return uriString
+}
+
+private fun File.androidQOrLowerCopyToDownload(): String {
+    val downloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    return File(downloadDirectory, name).let {
+        it.copyToFile(inputStream())
+        Uri.fromFile(it).toString()
+    }
+}
+
+fun File.copyToFile(inputStream: InputStream) {
+    this.outputStream().use {
+        inputStream.copyTo(it)
+    }
 }
 
 private fun File.getMimeType() = MimeTypeMap.getSingleton()

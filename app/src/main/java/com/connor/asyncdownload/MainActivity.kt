@@ -49,12 +49,19 @@ class MainActivity : AppCompatActivity() {
         if (!isGranted) "todo".logCat()
     }
 
+    private val requestWriteStorage = registerForActivityResult(
+        RequestPermission()
+    ) {
+        if (!it) "No Permission".showToast()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         createNotificationChannel(CHANNEL_ID)
         initBuilder()
         if (TargetApi.T) requestNotify.launch(postNotify)
+        if (!TargetApi.Q) requestWriteStorage.launch(writeStorage)
         initUI()
         initAdapter()
         initScope()
@@ -161,7 +168,7 @@ class MainActivity : AppCompatActivity() {
             .setOngoing(true)
     }
 
-    private suspend fun setVH(
+    private fun setVH(
         it: DownloadType<DownloadData>,
         data: DownloadData,
         binding: ItemDownloadBinding
@@ -240,8 +247,7 @@ class MainActivity : AppCompatActivity() {
         data: DownloadData,
         file: File
     ) {
-        @SuppressLint("NewApi")
-        if (TargetApi.Q) data.uriString = file.copyToDownload(this@MainActivity)
+        data.uriString = file.copyToDownload(this@MainActivity)
         data.copy().apply {
             state = State.Finished
             uiState.apply {
