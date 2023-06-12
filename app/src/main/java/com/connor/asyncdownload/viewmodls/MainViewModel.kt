@@ -11,7 +11,6 @@ import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.type.UiEvent
 import com.connor.asyncdownload.usecase.DownloadFileUseCase
 import com.connor.asyncdownload.utils.addID
-import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow

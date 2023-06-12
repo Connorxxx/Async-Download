@@ -1,7 +1,6 @@
 package com.connor.asyncdownload.model.repo
 
 import android.content.Context
-import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P

@@ -58,10 +58,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-//        supportActionBar?.apply {
-//            setDisplayHomeAsUpEnabled(true)
-//            setHomeButtonEnabled(true)
-//        }
         createNotificationChannel(CHANNEL_ID)
         initBuilder()
         if (TargetApi.T) requestNotify.launch(postNotify)
@@ -112,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                             viewModel.setUi(UiEvent.StartDownload(data))
                     } else {
                         if (data.state == State.Downloading)
-                            sendPause(data)
+                            viewModel.setUi(UiEvent.Download(data, DownloadType.Pause(data)))
                     }
                 }
                 viewModel.setUi(UiEvent.DoAllClick(!viewModel.doAllClick))
@@ -146,7 +142,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     State.Downloading -> {
-                        sendPause(data)
+                        viewModel.setUi(UiEvent.Download(data, DownloadType.Pause(data)))
                         setFabState(data)
                     }
                 }
@@ -172,7 +168,7 @@ class MainActivity : AppCompatActivity() {
                             is UiEvent.Download -> {
                                 getHolder(it.data.url)?.also { holder ->
                                     holder.currentLink?.also { data ->
-                                        setVH(it.type, data, holder.getBinding)
+                                        setHolderUI(it.type, data, holder.getBinding)
                                     }
                                 }
                             }
@@ -200,7 +196,7 @@ class MainActivity : AppCompatActivity() {
             .setOngoing(true)
     }
 
-    private fun setVH(
+    private fun setHolderUI(
         it: DownloadType<DownloadData>,
         data: DownloadData,
         binding: ItemDownloadBinding
@@ -211,7 +207,6 @@ class MainActivity : AppCompatActivity() {
                     tvProgress.text = getString(R.string.wating)
                 }
                 is DownloadType.Started -> {
-                    "Start: ${data.url}".logCat()
                     data.copy().apply {
                         state = State.Downloading
                         fileName = it.name
@@ -305,10 +300,6 @@ class MainActivity : AppCompatActivity() {
             }
             viewModel.setUi(UiEvent.Download(data, DownloadType.Canceled))
         }
-    }
-
-    private fun sendPause(link: DownloadData) {
-        viewModel.setUi(UiEvent.Download(link, DownloadType.Pause(link)))
     }
 
     @SuppressLint("NewApi", "MissingPermission")

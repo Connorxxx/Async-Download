@@ -1,6 +1,5 @@
 package com.connor.asyncdownload.utils
 
-import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.ID
 import com.connor.asyncdownload.model.data.KtorDownload
 import io.ktor.utils.io.*

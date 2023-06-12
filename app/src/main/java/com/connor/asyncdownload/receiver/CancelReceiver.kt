@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
 import com.connor.asyncdownload.type.Cancel
-import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.post
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope

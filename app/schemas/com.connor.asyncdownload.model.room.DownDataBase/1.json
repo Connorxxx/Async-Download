@@ -6,11 +6,23 @@
     "entities": [
       {
         "tableName": "down_data",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `fileName` TEXT NOT NULL, `state` TEXT NOT NULL, `uriString` TEXT NOT NULL, `url` TEXT NOT NULL, `downBytes` INTEGER NOT NULL, `p` TEXT NOT NULL, `size` TEXT NOT NULL, `total` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`url` TEXT NOT NULL, `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `downBytes` INTEGER NOT NULL, `fileName` TEXT NOT NULL, `state` TEXT NOT NULL, `uriString` TEXT NOT NULL, `p` TEXT NOT NULL, `size` TEXT NOT NULL, `total` TEXT NOT NULL)",
         "fields": [
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
           {
             "fieldPath": "id",
             "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "downBytes",
+            "columnName": "downBytes",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -30,18 +42,6 @@
             "fieldPath": "uriString",
             "columnName": "uriString",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "ktorDownload.url",
-            "columnName": "url",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "ktorDownload.downBytes",
-            "columnName": "downBytes",
-            "affinity": "INTEGER",
             "notNull": true
           },
           {
