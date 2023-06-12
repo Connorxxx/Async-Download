@@ -2,13 +2,14 @@ package com.connor.asyncdownload.viewmodls
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.Animator
 import com.connor.asyncdownload.model.data.DownJob
 import com.connor.asyncdownload.model.data.DownloadData
+import com.connor.asyncdownload.model.repo.RoomRepository
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.type.UiEvent
+import com.connor.asyncdownload.usecase.DownloadFileUseCase
 import com.connor.asyncdownload.utils.addID
 import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.showToast
@@ -21,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val repository: Repository
+    private val repository: RoomRepository,
+    private val downloadFileUseCase: DownloadFileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableSharedFlow<UiEvent<DownloadData>>()
@@ -68,10 +70,9 @@ class MainViewModel @Inject constructor(
         onFinish: (DownloadData, File) -> Unit
     ) {
          val job = viewModelScope.launch {
-            repository.downloadFile(link).collect {
+            downloadFileUseCase(link) {
                 _uiState.emit(UiEvent.Download(link, it))
                 when (it) {
-                    is DownloadType.Started -> "Started vm".logCat()
                     is DownloadType.Progress -> onDownload(it.m, it.value)
                     is DownloadType.Finished -> onFinish(it.m, it.file)
                     else -> {}

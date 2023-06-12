@@ -95,9 +95,14 @@ class MainActivity : AppCompatActivity() {
             }
             fab.setOnClickListener {
                 val url = "http://192.168.3.193:8080/$i.apk" //TODO
+                i++
+                if (!dlAdapter.currentList.none { it.url == url }) {
+                    "Task already exists".showToast()
+                    return@setOnClickListener
+                }
                 viewModel.insertDown(DownloadData(url))
                 lifecycleScope.launch { startDownByUrl(url) }
-                i++
+
             }
             btnDownAll.setOnClickListener {
                 if (dlAdapter.currentList.none { it.state != State.Finished }) return@setOnClickListener

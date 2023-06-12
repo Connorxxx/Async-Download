@@ -1,13 +1,12 @@
-package com.connor.asyncdownload.model
+package com.connor.asyncdownload.model.repo
 
 import android.content.Context
 import com.connor.asyncdownload.model.data.DownloadData
-import com.connor.asyncdownload.model.room.DownDao
+import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.onStreaming
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
@@ -19,28 +18,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
 @Singleton
-class Repository @Inject constructor(
+class HttpRepository @Inject constructor(
     @ApplicationContext private val ctx: Context,
-    private val client: HttpClient,
-    private val downDao: DownDao
+    private val client: HttpClient
 ) {
-    val loadDownData = downDao.loadDown().flowOn(Dispatchers.IO)
-    suspend fun insertDown(data: DownloadData) = withContext(Dispatchers.IO) {
-        downDao.insertDown(data)
-    }
-
-    suspend fun updateDowns(data: DownloadData) = withContext(Dispatchers.IO) {
-        downDao.updateDowns(data)
-    }
-
-    suspend fun downloadFile(download: DownloadData) = channelFlow {
+    suspend fun <T: KtorDownload> downloadFile(download: T) = channelFlow {
         val name = download.url.getFileNameFromUrl() ?: "error"
         val file = File(ctx.cacheDir, name)
         var exitsBytes = download.downBytes
@@ -76,5 +64,4 @@ class Repository @Inject constructor(
         error.printStackTrace()
         emit(DownloadType.Failed(error, download))
     }.flowOn(Dispatchers.IO)
-
 }
