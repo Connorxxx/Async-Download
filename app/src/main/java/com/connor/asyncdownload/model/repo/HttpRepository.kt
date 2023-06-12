@@ -2,11 +2,8 @@ package com.connor.asyncdownload.model.repo
 
 import android.content.Context
 import com.connor.asyncdownload.model.data.KtorDownload
-import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
-import com.connor.asyncdownload.utils.formatSize
-import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.onStreaming
+import com.connor.asyncdownload.utils.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.plugins.*
@@ -27,13 +24,13 @@ class HttpRepository @Inject constructor(
     @ApplicationContext private val ctx: Context,
     private val client: HttpClient
 ) {
-    suspend fun <T: KtorDownload> downloadFile(download: T) = channelFlow {
+    fun <T: KtorDownload> downloadFile(download: T) = channelFlow {
         val name = download.url.getFileNameFromUrl() ?: "error"
         val file = File(ctx.cacheDir, name)
         var exitsBytes = download.downBytes
         val rangeHeader = "bytes=${download.downBytes}-"
         var lastUpdateTime = System.currentTimeMillis()
-        send(DownloadType.Started(name,download))
+        send(Started(name,download))
         client.prepareGet(download.url) {
             header(HttpHeaders.Range, rangeHeader)
             onDownload { _, length ->
@@ -43,8 +40,8 @@ class HttpRepository @Inject constructor(
                 val timeSinceLastUpdate = currentTime - lastUpdateTime
                 if (timeSinceLastUpdate >= 500) {
                     val p = P(progress, download.downBytes.formatSize(), totalLength.formatSize())
-                    if (download.downBytes == 0L) send(DownloadType.Waiting(download))
-                    else send(DownloadType.Progress(p, download))
+                    if (download.downBytes == 0L) send(Waiting(download))
+                    else send(Progress(p, download))
                     lastUpdateTime = currentTime
                 }
             }
@@ -54,13 +51,11 @@ class HttpRepository @Inject constructor(
                 download.downBytes = 0
                 exitsBytes = 0
             }
-            it.bodyAsChannel().onStreaming(file, download) { s ->
-                send(DownloadType.Speed(s, download))
-            }
+            it.bodyAsChannel().onStreaming(file, download) { s -> send(Speed(s, download)) }
         }
-        send(DownloadType.Finished(file, download))
+        send(Finished(file, download))
     }.catch { error ->
         error.printStackTrace()
-        emit(DownloadType.Failed(error, download))
+        emit(Failed(error, download))
     }.flowOn(Dispatchers.IO)
 }

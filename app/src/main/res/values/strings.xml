@@ -9,5 +9,5 @@
     <string name="downloads">Downloads</string>
     <string name="download_file">Download File</string>
     <string name="download_all">Download all</string>
-    <string name="cancel_all">Cancel all</string>
+    <string name="cancel_all">Pause all</string>
 </resources>

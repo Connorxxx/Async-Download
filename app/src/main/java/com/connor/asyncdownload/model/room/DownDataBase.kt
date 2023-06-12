@@ -6,6 +6,5 @@ import com.connor.asyncdownload.model.data.DownloadData
 
 @Database(version = 1, entities = [DownloadData::class])
 abstract class DownDataBase : RoomDatabase() {
-
     abstract fun downDao(): DownDao
 }

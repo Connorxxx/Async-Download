@@ -9,7 +9,7 @@ import javax.inject.Inject
 @ViewModelScoped
 class DownloadFileUseCase @Inject constructor(private val httpRepository: HttpRepository) {
 
-    suspend operator  fun <T: KtorDownload> invoke(
+    suspend operator fun <T: KtorDownload> invoke(
         download: T,
         block: suspend (DownloadType<T>) -> Unit
     ) = httpRepository.downloadFile(download).collect(block)

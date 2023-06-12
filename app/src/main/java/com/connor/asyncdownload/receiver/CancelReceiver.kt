@@ -10,15 +10,16 @@ import com.connor.asyncdownload.utils.post
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class CancelReceiver : BroadcastReceiver() {
-
     override fun onReceive(coBroadcastReceiverntext: Context, intent: Intent) {
         val i = intent.getIntExtra(Notification.EXTRA_NOTIFICATION_ID, -1)
-        CoroutineScope(Dispatchers.Main).launch {
-            post(Cancel(i))
+        CoroutineScope(Dispatchers.Default).launch {
+            post(Cancel(i)).join()
+            cancel()
         }
         NotificationManagerCompat.from(coBroadcastReceiverntext).cancel(i)
     }

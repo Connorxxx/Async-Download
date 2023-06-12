@@ -6,12 +6,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import android.view.View
 import android.view.animation.LinearInterpolator
 import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
@@ -28,6 +28,14 @@ import com.connor.asyncdownload.ui.adapter.DlAdapter
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.InputStream
+
+fun Context.openUriByView(uri: Uri) {
+    Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, contentResolver.getType(uri))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        startActivity(this)
+    }
+}
 
 inline fun <reified T : ViewBinding> Fragment.viewBinding() =
     ViewBindingDelegate(T::class.java, this)
@@ -61,18 +69,6 @@ fun ProgressBar.setAmin(value: Int, d: Long): ObjectAnimator =
         interpolator = LinearInterpolator()
         start()
     }
-
-
-fun View.debounceClick(time: Long = 500L, listen: (View) -> Unit) {
-    var job: Job? = null
-    this.setOnClickListener {
-        job?.cancel()
-        job = CoroutineScope(Dispatchers.Main).launch {
-            delay(time)
-            listen(it)
-        }
-    }
-}
 
 fun RecyclerView.getHolderFromPosition(position: Int) =
     findViewHolderForAdapterPosition(position) as? DlAdapter.ViewHolder
