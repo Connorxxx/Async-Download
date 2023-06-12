@@ -42,8 +42,8 @@ fun String.showToast() {
 }
 
 fun AppCompatActivity.createNotificationChannel(channelID: String) {
-    val name = getString(R.string.channel_name)
-    val descriptionText = getString(R.string.channel_description)
+    val name = getString(R.string.download)
+    val descriptionText = getString(R.string.download_file)
     val importance = NotificationManager.IMPORTANCE_DEFAULT
     val channel = NotificationChannel(channelID, name, importance).apply {
         setSound(null, null)

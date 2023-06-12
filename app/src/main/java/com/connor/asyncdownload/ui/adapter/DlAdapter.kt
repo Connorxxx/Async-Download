@@ -33,8 +33,13 @@ class DlAdapter @Inject constructor(
     }
 
     private var fileListen: ((DownloadData) -> Unit)? = null
+    private var newList: ((MutableList<DownloadData>) -> Unit)? = null
     fun setFileClicked(datas: (DownloadData) -> Unit) {
         fileListen = datas
+    }
+
+    fun onNewListAdd(list: (MutableList<DownloadData>) -> Unit) {
+        newList = list
     }
 
     inner class ViewHolder(private val binding: ItemDownloadBinding) :
@@ -44,6 +49,7 @@ class DlAdapter @Inject constructor(
         var currentLink: DownloadData? = null
 
         init {
+            "init ViewHolder".logCat()
             with(binding) {
                 imgDl.setOnClickListener {
                     currentLink?.let { data ->
@@ -72,7 +78,7 @@ class DlAdapter @Inject constructor(
                     else -> R.drawable.circle_down
                 }
             )
-            tvFile.text = data.ktorDownload.url.getFileNameFromUrl()
+            tvFile.text = data.url.getFileNameFromUrl()
             data.uiState.apply {
                 progressBar.progress = p.toInt()
                 tvProgress.text = when (data.state) {
@@ -102,5 +108,12 @@ class DlAdapter @Inject constructor(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val repo = getItem(position)
         holder.bind(repo)
+    }
+    override fun onCurrentListChanged(
+        previousList: MutableList<DownloadData>,
+        currentList: MutableList<DownloadData>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        newList?.let { it(currentList) }
     }
 }

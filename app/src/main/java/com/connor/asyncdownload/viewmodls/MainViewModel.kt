@@ -6,11 +6,11 @@ import com.connor.asyncdownload.model.Repository
 import com.connor.asyncdownload.model.data.Animator
 import com.connor.asyncdownload.model.data.DownJob
 import com.connor.asyncdownload.model.data.DownloadData
-import com.connor.asyncdownload.model.data.KtorDownload
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
-import com.connor.asyncdownload.type.UiState
+import com.connor.asyncdownload.type.UiEvent
 import com.connor.asyncdownload.utils.addID
+import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,50 +24,42 @@ class MainViewModel @Inject constructor(
     private val repository: Repository
 ) : ViewModel() {
 
-    private val _uiState = MutableSharedFlow<UiState<DownloadData>>()
+    private val _uiState = MutableSharedFlow<UiEvent<DownloadData>>()
     val uiState = _uiState.asSharedFlow()
 
-    var fabClick = false
+    var doAllClick = false
 
     val jobs = arrayListOf<DownJob>()
     val animas = arrayListOf<Animator>()
 
-    private val domain = "http://192.168.10.185:8080/Downloads/temp/"
+    private val domain = "http://192.168.3.193:8080/"
     private var i = 1
 
     private val loadDownData = repository.loadDownData
 
     fun loadDownData(block: (List<DownloadData>) -> Unit) {
         viewModelScope.launch {
-            loadDownData.collect {
-                block(it)
-            }
+            loadDownData.collect { block(it) }
         }
     }
 
-    fun setUi(uiState: UiState<DownloadData>) {
-        viewModelScope.launch {
-            _uiState.emit(uiState)
-        }
+    fun setUi(uiState: UiEvent<DownloadData>) {
+        viewModelScope.launch { _uiState.emit(uiState) }
     }
 
     fun addData(list: List<DownloadData>) {
         val url = "$domain$i.apk"
-        if (!list.none { it.ktorDownload.url == url }) "Task already exists".showToast()
-        else insertDown(DownloadData(KtorDownload(url)))
+        if (!list.none { it.url == url }) "Task already exists".showToast()
+        else insertDown(DownloadData(url))
         i++
     }
 
     fun insertDown(data: DownloadData) {
-        viewModelScope.launch {
-            repository.insertDown(data)
-        }
+        viewModelScope.launch { repository.insertDown(data) }
     }
 
     fun updateDowns(data: DownloadData) {
-        viewModelScope.launch {
-            repository.updateDowns(data)
-        }
+        viewModelScope.launch { repository.updateDowns(data) }
     }
 
     fun download(
@@ -77,14 +69,11 @@ class MainViewModel @Inject constructor(
     ) {
          val job = viewModelScope.launch {
             repository.downloadFile(link).collect {
-                _uiState.emit(UiState.Download(link, it))
+                _uiState.emit(UiEvent.Download(link, it))
                 when (it) {
-                    is DownloadType.Progress -> {
-                        onDownload(it.m, it.value)
-                    }
-                    is DownloadType.Finished -> {
-                        onFinish(it.m, it.file)
-                    }
+                    is DownloadType.Started -> "Started vm".logCat()
+                    is DownloadType.Progress -> onDownload(it.m, it.value)
+                    is DownloadType.Finished -> onFinish(it.m, it.file)
                     else -> {}
                 }
             }

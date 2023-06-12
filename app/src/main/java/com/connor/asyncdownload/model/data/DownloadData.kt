@@ -6,17 +6,13 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "down_data")
 data class DownloadData(
-    @Embedded val ktorDownload: KtorDownload,
+    val url: String,
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    var downBytes: Long = 0L,
     var fileName: String = "",
     var state: State = State.Default,
     var uriString: String = "",
     @Embedded val uiState: UiState = UiState()
-)
-
-data class KtorDownload(
-    val url: String,
-    var downBytes: Long = 0L
 )
 
 data class UiState(

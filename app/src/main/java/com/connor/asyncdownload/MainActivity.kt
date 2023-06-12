@@ -15,7 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import coil.load
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.OnScrollListener
 import com.connor.asyncdownload.databinding.ActivityMainBinding
 import com.connor.asyncdownload.databinding.ItemDownloadBinding
 import com.connor.asyncdownload.model.data.*
@@ -23,11 +24,12 @@ import com.connor.asyncdownload.receiver.CancelReceiver
 import com.connor.asyncdownload.type.Cancel
 import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
-import com.connor.asyncdownload.type.UiState
+import com.connor.asyncdownload.type.UiEvent
 import com.connor.asyncdownload.ui.adapter.DlAdapter
 import com.connor.asyncdownload.utils.*
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -43,21 +45,23 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var builder: NotificationCompat.Builder
 
-    private val requestNotify = registerForActivityResult(
-        RequestPermission()
-    ) { isGranted ->
-        if (!isGranted) "todo".logCat()
+    private val requestNotify = registerForActivityResult(RequestPermission()) {
+        if (!it) "todo".logCat()
     }
 
-    private val requestWriteStorage = registerForActivityResult(
-        RequestPermission()
-    ) {
+    private val requestWriteStorage = registerForActivityResult(RequestPermission()) {
         if (!it) "No Permission".showToast()
     }
 
+    private var i = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
+//        supportActionBar?.apply {
+//            setDisplayHomeAsUpEnabled(true)
+//            setHomeButtonEnabled(true)
+//        }
         createNotificationChannel(CHANNEL_ID)
         initBuilder()
         if (TargetApi.T) requestNotify.launch(postNotify)
@@ -78,25 +82,44 @@ class MainActivity : AppCompatActivity() {
                 layoutManager = LinearLayoutManager(this@MainActivity)
                 adapter = dlAdapter
                 itemAnimator = null
+                addOnScrollListener(object : OnScrollListener() {
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        super.onScrolled(recyclerView, dx, dy)
+                        if (dy > 0) binding.fab.hide() else binding.fab.show()
+                    }
+                })
             }
             fab.setOnLongClickListener {
                 viewModel.addData(dlAdapter.currentList)
                 true
             }
             fab.setOnClickListener {
+                val url = "http://192.168.3.193:8080/$i.apk" //TODO
+                viewModel.insertDown(DownloadData(url))
+                lifecycleScope.launch { startDownByUrl(url) }
+                i++
+            }
+            btnDownAll.setOnClickListener {
                 if (dlAdapter.currentList.none { it.state != State.Finished }) return@setOnClickListener
-                dlAdapter.currentList.filterNot { it.state == State.Finished }.forEach { link ->
-                    if (!viewModel.fabClick) {
-                        if (link.state != State.Downloading)
-                            viewModel.download(link, ::sendNotify, ::setFinished)
+                dlAdapter.currentList.filterNot { it.state == State.Finished }.forEach { data ->
+                    if (!viewModel.doAllClick) {
+                        if (data.state != State.Downloading)
+                            viewModel.setUi(UiEvent.StartDownload(data))
                     } else {
-                        if (link.state == State.Downloading)
-                            sendPause(link)
+                        if (data.state == State.Downloading)
+                            sendPause(data)
                     }
                 }
-                viewModel.setUi(UiState.FabClick(!viewModel.fabClick))
+                viewModel.setUi(UiEvent.DoAllClick(!viewModel.doAllClick))
             }
         }
+    }
+
+    private suspend fun startDownByUrl(url: String) {
+        delay(25)
+        dlAdapter.currentList.find { it.url == url }?.let {
+            viewModel.setUi(UiEvent.StartDownload(it))
+        } ?: startDownByUrl(url)
     }
 
     private fun initAdapter() {
@@ -104,14 +127,13 @@ class MainActivity : AppCompatActivity() {
             viewModel.loadDownData {
                 dlAdapter.submitList(it)
             }
-
-            setFileClicked { link ->
-                when (link.state) {
+            setFileClicked { data ->
+                when (data.state) {
                     State.Pause, State.Default, State.Canceled, State.Failed -> {
-                        viewModel.download(link, ::sendNotify, ::setFinished)
+                        viewModel.setUi(UiEvent.StartDownload(data))
                     }
                     State.Finished -> {
-                        val uri = Uri.parse(link.uriString)
+                        val uri = Uri.parse(data.uriString)
                         Intent(Intent.ACTION_VIEW).apply {
                             setDataAndType(uri, contentResolver.getType(uri))
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -119,8 +141,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     State.Downloading -> {
-                        sendPause(link)
-                        setFabState(link)
+                        sendPause(data)
+                        setFabState(data)
                     }
                 }
             }
@@ -136,18 +158,21 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     viewModel.uiState.collect {
                         when (it) {
-                            is UiState.FabClick -> {
-                                it.logCat()
-                                viewModel.fabClick = it.boolean
-                                if (!it.boolean) binding.fab.load(R.drawable.circle_down)
-                                else binding.fab.load(R.drawable.pause_circle)
+                            is UiEvent.DoAllClick -> {
+                                viewModel.doAllClick = it.boolean
+                                if (!it.boolean) binding.btnDownAll.text =
+                                    getString(R.string.download_all)
+                                else binding.btnDownAll.text = getString(R.string.cancel_all)
                             }
-                            is UiState.Download -> {
-                                getHolder(it.link.ktorDownload.url)?.also { holder ->
+                            is UiEvent.Download -> {
+                                getHolder(it.data.url)?.also { holder ->
                                     holder.currentLink?.also { data ->
                                         setVH(it.type, data, holder.getBinding)
                                     }
                                 }
+                            }
+                            is UiEvent.StartDownload -> {
+                                viewModel.download(it.data, ::sendNotify, ::setFinished)
                             }
                         }
                     }
@@ -181,12 +206,13 @@ class MainActivity : AppCompatActivity() {
                     tvProgress.text = getString(R.string.wating)
                 }
                 is DownloadType.Started -> {
+                    "Start: ${data.url}".logCat()
                     data.copy().apply {
                         state = State.Downloading
                         fileName = it.name
                         updateDowns()
                     }
-                    viewModel.setUi(UiState.FabClick(true))
+                    viewModel.setUi(UiEvent.DoAllClick(true))
                 }
                 is DownloadType.Progress -> {
                     data.uiState.apply {
@@ -206,7 +232,7 @@ class MainActivity : AppCompatActivity() {
                 is DownloadType.Failed -> {
                     data.copy().apply {
                         state = State.Failed
-                        ktorDownload.downBytes = it.m.ktorDownload.downBytes
+                        downBytes = it.m.downBytes
                         updateDowns()
                     }
                     it.throwable.localizedMessage?.showToast()
@@ -216,7 +242,7 @@ class MainActivity : AppCompatActivity() {
                     NotificationManagerCompat.from(this@MainActivity).cancel(data.id)
                     data.copy().apply {
                         state = State.Pause
-                        ktorDownload.downBytes = it.m.ktorDownload.downBytes
+                        downBytes = it.m.downBytes
                         updateDowns()
                     }
                 }
@@ -234,13 +260,13 @@ class MainActivity : AppCompatActivity() {
         dlAdapter.currentList
             .filterNot { it.id == data.id }
             .none { it.state == State.Downloading }.also {
-                if (it) viewModel.setUi(UiState.FabClick(false))
+                if (it) viewModel.setUi(UiEvent.DoAllClick(false))
             }
     }
 
     private fun getHolder(url: String) =
         dlAdapter.currentList.let { list ->
-            list.indexOf(list.find { it.ktorDownload.url == url })
+            list.indexOf(list.find { it.url == url })
                 .takeIf { it >= 0 }?.let { binding.rvDl.getHolderFromPosition(it) }
         }
 
@@ -268,16 +294,16 @@ class MainActivity : AppCompatActivity() {
             viewModel.animas.find { it.id == id }?.anima?.cancel()
             data.copy().apply {
                 state = State.Canceled
-                ktorDownload.downBytes = 0
+                downBytes = 0
                 uiState.apply { p = "0"; size = ""; total = "" }
                 updateDowns()
             }
-            viewModel.setUi(UiState.Download(data, DownloadType.Canceled))
+            viewModel.setUi(UiEvent.Download(data, DownloadType.Canceled))
         }
     }
 
     private fun sendPause(link: DownloadData) {
-        viewModel.setUi(UiState.Download(link, DownloadType.Pause(link)))
+        viewModel.setUi(UiEvent.Download(link, DownloadType.Pause(link)))
     }
 
     @SuppressLint("NewApi", "MissingPermission")
@@ -291,7 +317,7 @@ class MainActivity : AppCompatActivity() {
             clearActions()
             setProgress(100, p.p.toInt(), false)
             addAction(R.drawable.ic_cancel, "取消", cancel)
-            setContentTitle(data.ktorDownload.url.getFileNameFromUrl())
+            setContentTitle(data.url.getFileNameFromUrl())
         }
         NotificationManagerCompat.from(this).notify(data.id, builder.build())
     }
@@ -301,7 +327,7 @@ class MainActivity : AppCompatActivity() {
         builder.apply {
             clearActions()
             setProgress(100, progress, false)
-            setContentTitle("Downloaded: ${data.ktorDownload.url.getFileNameFromUrl()}")
+            setContentTitle("Downloaded: ${data.url.getFileNameFromUrl()}")
             setOngoing(false)
         }
         NotificationManagerCompat.from(this).notify(id, builder.build())

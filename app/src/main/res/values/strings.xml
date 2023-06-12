@@ -5,6 +5,9 @@
     <string name="download_size">%1$s%2$s</string>
     <string name="done">Done</string>
     <string name="dl_failed">Download failed</string>
-    <string name="channel_name">Download</string>
-    <string name="channel_description">Download File</string>
+    <string name="download">Download</string>
+    <string name="downloads">Downloads</string>
+    <string name="download_file">Download File</string>
+    <string name="download_all">Download all</string>
+    <string name="cancel_all">Cancel all</string>
 </resources>

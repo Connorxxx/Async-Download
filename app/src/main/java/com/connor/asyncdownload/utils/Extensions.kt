@@ -1,7 +1,7 @@
 package com.connor.asyncdownload.utils
 
+import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.ID
-import com.connor.asyncdownload.model.data.KtorDownload
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import java.io.File
@@ -25,7 +25,7 @@ fun Long.formatSize(): String {
 
 suspend fun ByteReadChannel.onStreaming(
     file: File,
-    download: KtorDownload,
+    download: DownloadData,
     speed: suspend (String) -> Unit
 ) {
     var lastUpdateTime = System.currentTimeMillis()

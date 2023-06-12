@@ -7,6 +7,7 @@ import com.connor.asyncdownload.type.DownloadType
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.utils.formatSize
 import com.connor.asyncdownload.utils.getFileNameFromUrl
+import com.connor.asyncdownload.utils.logCat
 import com.connor.asyncdownload.utils.onStreaming
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
@@ -40,22 +41,22 @@ class Repository @Inject constructor(
     }
 
     suspend fun downloadFile(download: DownloadData) = channelFlow {
-        val name = download.ktorDownload.url.getFileNameFromUrl() ?: "error"
+        val name = download.url.getFileNameFromUrl() ?: "error"
         val file = File(ctx.cacheDir, name)
-        var exitsBytes = download.ktorDownload.downBytes
-        val rangeHeader = "bytes=${download.ktorDownload.downBytes}-"
+        var exitsBytes = download.downBytes
+        val rangeHeader = "bytes=${download.downBytes}-"
         var lastUpdateTime = System.currentTimeMillis()
         send(DownloadType.Started(name,download))
-        client.prepareGet(download.ktorDownload.url) {
+        client.prepareGet(download.url) {
             header(HttpHeaders.Range, rangeHeader)
             onDownload { _, length ->
                 val totalLength = exitsBytes + length
-                val progress = (download.ktorDownload.downBytes * 100f / totalLength).roundToInt().toString()
+                val progress = (download.downBytes * 100f / totalLength).roundToInt().toString()
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastUpdate = currentTime - lastUpdateTime
                 if (timeSinceLastUpdate >= 500) {
-                    val p = P(progress, download.ktorDownload.downBytes.formatSize(), totalLength.formatSize())
-                    if (download.ktorDownload.downBytes == 0L) send(DownloadType.Waiting(download))
+                    val p = P(progress, download.downBytes.formatSize(), totalLength.formatSize())
+                    if (download.downBytes == 0L) send(DownloadType.Waiting(download))
                     else send(DownloadType.Progress(p, download))
                     lastUpdateTime = currentTime
                 }
@@ -63,10 +64,10 @@ class Repository @Inject constructor(
         }.execute {
             if (it.status != HttpStatusCode.PartialContent) {
                 file.delete()
-                download.ktorDownload.downBytes = 0
+                download.downBytes = 0
                 exitsBytes = 0
             }
-            it.bodyAsChannel().onStreaming(file, download.ktorDownload) { s ->
+            it.bodyAsChannel().onStreaming(file, download) { s ->
                 send(DownloadType.Speed(s, download))
             }
         }
