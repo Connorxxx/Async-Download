@@ -9,14 +9,15 @@ import com.connor.asyncdownload.model.repo.RoomRepository
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.type.UiEvent
 import com.connor.asyncdownload.usecase.DownloadFileUseCase
-import com.connor.asyncdownload.utils.*
+import com.connor.asyncdownload.utils.Finished
+import com.connor.asyncdownload.utils.Progress
+import com.connor.asyncdownload.utils.addID
+import com.connor.asyncdownload.utils.showToast
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
-import kotlin.coroutines.suspendCoroutine
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -31,6 +32,9 @@ class MainViewModel @Inject constructor(
 
     val jobs = arrayListOf<DownJob>()
     val animas = arrayListOf<Animator>()
+
+    var itemList = emptyMap<String, List<String>>()
+    var itemList2 = emptyMap<String, List<String>>()
 
     private val domain = "http://192.168.10.185:8080/Downloads/temp/"
     private var i = 1

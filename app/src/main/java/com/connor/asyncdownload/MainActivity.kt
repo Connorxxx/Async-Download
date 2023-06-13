@@ -22,14 +22,14 @@ import androidx.recyclerview.widget.RecyclerView.OnScrollListener
 import com.connor.asyncdownload.databinding.ActivityMainBinding
 import com.connor.asyncdownload.model.data.*
 import com.connor.asyncdownload.receiver.CancelReceiver
+import com.connor.asyncdownload.test.parseCityData
+import com.connor.asyncdownload.test.readFile
 import com.connor.asyncdownload.type.*
 import com.connor.asyncdownload.ui.adapter.DlAdapter
 import com.connor.asyncdownload.utils.*
 import com.connor.asyncdownload.viewmodls.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.io.File
 import javax.inject.Inject
 
@@ -64,6 +64,11 @@ class MainActivity : AppCompatActivity() {
         initUI()
         initAdapter()
         initScope()
+
+        lifecycleScope.launch {
+            viewModel.itemList = parseCityData(readFile("country.json"))
+            viewModel.itemList2 = parseCityData(readFile("city.json"))
+        }
     }
 
     override fun onDestroy() {
@@ -85,7 +90,24 @@ class MainActivity : AppCompatActivity() {
                 })
             }
             fab.setOnLongClickListener {
-                viewModel.addData(dlAdapter.currentList)
+                //viewModel.addData(dlAdapter.currentList)
+//                viewModel.itemList2.keys.find { it.contains("山东") }?.let {
+//                    viewModel.itemList2[it]?.forEach {ss ->
+//                        ss.logCat()
+//                    }
+//                }
+//                viewModel.itemList.forEach {
+//                    "${it.key} ${it.value}".logCat()
+//                }
+                viewModel.itemList["Japan"]?.forEach { s ->
+                    if (s == "--") {
+                        viewModel.itemList2.keys.find { it.contains("Japan") }?.let {
+                            viewModel.itemList2[it]?.forEach { ss->
+                                ss.logCat()
+                            }
+                        }
+                    }
+                }
                 true
             }
             fab.setOnClickListener {
@@ -170,7 +192,11 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     is UiEvent.Download -> getHolder(it.data.url)?.setHolderUI(it.type)
-                    is UiEvent.StartDownload -> viewModel.download(it.data, ::sendNotify, ::setFinished)
+                    is UiEvent.StartDownload -> viewModel.download(
+                        it.data,
+                        ::sendNotify,
+                        ::setFinished
+                    )
                 }
             }
         }

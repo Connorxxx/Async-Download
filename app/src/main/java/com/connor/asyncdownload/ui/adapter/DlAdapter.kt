@@ -12,7 +12,6 @@ import com.connor.asyncdownload.databinding.ItemDownloadBinding
 import com.connor.asyncdownload.model.data.DownloadData
 import com.connor.asyncdownload.model.data.State
 import com.connor.asyncdownload.utils.getFileNameFromUrl
-import com.connor.asyncdownload.utils.logCat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
