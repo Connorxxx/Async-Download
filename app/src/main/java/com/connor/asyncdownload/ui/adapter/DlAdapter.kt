@@ -33,13 +33,13 @@ class DlAdapter @Inject constructor(
     }
 
     private var fileListen: ((DownloadData) -> Unit)? = null
-    private var newList: ((MutableList<DownloadData>) -> Unit)? = null
+    private var deleteClick: ((DownloadData) -> Unit)? = null
     fun setFileClicked(datas: (DownloadData) -> Unit) {
         fileListen = datas
     }
 
-    fun onNewListAdd(list: (MutableList<DownloadData>) -> Unit) {
-        newList = list
+    fun deleteDownload(list: (DownloadData) -> Unit) {
+        deleteClick = list
     }
 
     inner class ViewHolder(private val binding: ItemDownloadBinding) :
@@ -49,18 +49,17 @@ class DlAdapter @Inject constructor(
         var currentLink: DownloadData? = null
 
         init {
-            "init ViewHolder".logCat()
             with(binding) {
                 imgDl.setOnClickListener {
                     currentLink?.let { data ->
                         fileListen?.let { it(data) }
                     }
                 }
-                tvFile.setOnClickListener {
-                    notifyItemChanged(bindingAdapterPosition)
+                tvFile.setOnLongClickListener {
                     currentLink?.let { data ->
-                        data.state.name.logCat()
+                        deleteClick?.let { it(data) }
                     }
+                    true
                 }
             }
         }
@@ -108,12 +107,5 @@ class DlAdapter @Inject constructor(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val repo = getItem(position)
         holder.bind(repo)
-    }
-    override fun onCurrentListChanged(
-        previousList: MutableList<DownloadData>,
-        currentList: MutableList<DownloadData>
-    ) {
-        super.onCurrentListChanged(previousList, currentList)
-        newList?.let { it(currentList) }
     }
 }

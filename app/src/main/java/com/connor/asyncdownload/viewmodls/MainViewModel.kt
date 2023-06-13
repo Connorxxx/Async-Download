@@ -9,15 +9,14 @@ import com.connor.asyncdownload.model.repo.RoomRepository
 import com.connor.asyncdownload.type.P
 import com.connor.asyncdownload.type.UiEvent
 import com.connor.asyncdownload.usecase.DownloadFileUseCase
-import com.connor.asyncdownload.utils.Finished
-import com.connor.asyncdownload.utils.Progress
-import com.connor.asyncdownload.utils.addID
-import com.connor.asyncdownload.utils.showToast
+import com.connor.asyncdownload.utils.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import kotlin.coroutines.suspendCoroutine
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -38,11 +37,10 @@ class MainViewModel @Inject constructor(
 
     private val loadDownData = repository.loadDownData
 
-    fun loadDownData(block: (List<DownloadData>) -> Unit) {
-        viewModelScope.launch {
-            loadDownData.collect { block(it) }
-        }
+    fun loadDownData(block: (List<DownloadData>) -> Unit) = viewModelScope.launch {
+        loadDownData.collect { block(it) }
     }
+
 
     fun setUi(uiState: UiEvent<DownloadData>) {
         viewModelScope.launch { _uiState.emit(uiState) }
@@ -57,15 +55,20 @@ class MainViewModel @Inject constructor(
         i++
     }
 
-    fun insertDown(data: DownloadData) {
-        viewModelScope.launch {
-            repository.insertDown(data)
-        }
+    fun insertDown(data: DownloadData) = viewModelScope.launch {
+        repository.insertDown(data)
     }
 
-    fun updateDowns(data: DownloadData) {
-        viewModelScope.launch { repository.updateDowns(data) }
+
+    fun updateDowns(vararg data: DownloadData) = viewModelScope.launch {
+        repository.updateDowns(*data)
     }
+
+
+    fun deleteDowns(vararg data: DownloadData) = viewModelScope.launch {
+        repository.deleteDowns(*data)
+    }
+
 
     fun download(
         link: DownloadData,

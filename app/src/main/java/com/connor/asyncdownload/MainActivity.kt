@@ -141,6 +141,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            deleteDownload {
+                viewModel.deleteDowns(it)
+            }
         }
     }
 
@@ -189,7 +192,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun DlAdapter.ViewHolder.setHolderUI(it: DownloadType<DownloadData>) {
         val data = currentLink ?: return
-        with(getBinding) {
+        getBinding.apply {
             when (it) {
                 is Waiting -> tvProgress.text = getString(R.string.wating)
                 is Started -> {

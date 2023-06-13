@@ -10,8 +10,11 @@ interface DownDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDown(data: DownloadData): Long
 
+    @Delete
+    suspend fun deleteDowns(vararg data: DownloadData): Int
+
     @Update
-    suspend fun updateDowns(vararg users: DownloadData)
+    suspend fun updateDowns(vararg data: DownloadData): Int
 
     @Query("select * from down_data")
     fun loadDown(): Flow<List<DownloadData>>

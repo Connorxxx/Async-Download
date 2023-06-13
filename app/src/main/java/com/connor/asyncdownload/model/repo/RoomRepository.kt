@@ -18,7 +18,11 @@ class RoomRepository @Inject constructor(
         downDao.insertDown(data)
     }
 
-    suspend fun updateDowns(data: DownloadData) = withContext(Dispatchers.IO) {
-        downDao.updateDowns(data)
+    suspend fun updateDowns(vararg data: DownloadData) = withContext(Dispatchers.IO) {
+        downDao.updateDowns(*data)
+    }
+
+    suspend fun deleteDowns(vararg data: DownloadData) = withContext(Dispatchers.IO) {
+        downDao.deleteDowns(*data)
     }
 }

@@ -44,7 +44,7 @@ suspend fun ByteReadChannel.onStreaming(
             if (timeSinceLastUpdate >= 500) {
                 val downloadedBytesDelta = download.downBytes - lastDownloadedBytes
                 val downloadSpeed = downloadedBytesDelta.toDouble() / timeSinceLastUpdate * 1000
-                speed(formatSpeed(downloadSpeed))
+                speed(downloadSpeed.formatSpeed())
                 lastUpdateTime = currentTime
                 lastDownloadedBytes = download.downBytes
             }
@@ -60,12 +60,12 @@ fun <T: ID> ArrayList<T>.addID(id: Int, obj: T): ArrayList<T> {
     return this
 }
 
-private fun formatSpeed(speed: Double): String {
-    val kilobytes = speed / 1024
+private fun Double.formatSpeed(): String {
+    val kilobytes = this / 1024
     val megabytes = kilobytes / 1024
     return when {
         megabytes >= 1.0 -> String.format("%.2f", megabytes) + "MB/s"
         kilobytes >= 1.0 -> String.format("%.2f", kilobytes) + "KB/s"
-        else -> String.format("%.2f", speed) + "B/s"
+        else -> String.format("%.2f", this) + "B/s"
     }
 }
